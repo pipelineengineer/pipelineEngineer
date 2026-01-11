@@ -1,0 +1,85 @@
+import os
+
+import pandas as pd
+
+from logic.main import *
+from logic.dataframes_to_csv import *
+
+def pres_drop_over_line(line_data_df, line_xyz_df,
+                        liquid_density, liquid_viscosity,
+                        gas_density, gas_viscosity,
+                        surf_tens,gas_fraction,
+                        outlet_pres):
+    
+    results_df = pd.DataFrame()
+
+    line_data_row = line_data_df.iloc[0]
+
+    mass_flow_rate = line_data_row['mdot_from_kg_per_s']
+
+    vol_flow_rate = mass_flow_rate / liquid_density
+
+    gas_flow_rate = vol_flow_rate * gas_fraction
+
+    liquid_flow_rate = vol_flow_rate * (1-gas_fraction)
+
+    pres = outlet_pres
+
+    internal_diameter = line_data_row['diameter_m']
+
+    line_roughness = line_data_row['k_mm']
+
+    line_mesh_df = line_xyz_df.copy()
+
+    line_mesh_df = line_mesh_df.sort_values('chainage_m')
+
+    line_mesh_df['section_id'] = (
+        line_mesh_df['name'].astype(str)
+        + '_'
+        + line_mesh_df['chainage_m'].astype(str)
+        + '_'
+        + line_mesh_df['chainage_m'].shift(-1).astype(str)
+    )
+
+    line_mesh_df['section_length_m'] = (
+        line_mesh_df['chainage_m'].shift(-1) - line_mesh_df['chainage_m']
+    )
+
+    line_mesh_df['section_elev_m'] = (
+        line_mesh_df['elev1'].shift(-1) - line_mesh_df['elev1']
+    )
+
+    line_mesh_df = line_mesh_df.iloc[:-1]
+
+    line_mesh_df = line_mesh_df.sort_values(by='chainage_m',ascending=False)
+
+    line_mesh_df.to_clipboard()
+
+    for index, row in line_mesh_df.iterrows():
+
+        length = row['section_length_m']
+
+        elevation = row['section_elev_m']
+
+        include_acceleration_factor = False
+
+        bb_df_entry = beggs_brill_method(gas_flow_rate,liquid_flow_rate,
+                    gas_density, gas_viscosity,liquid_density,liquid_viscosity,
+                    surf_tens, pres, 
+                    internal_diameter,line_roughness,
+                    length,elevation,
+                    include_acceleration_factor)
+        
+        bb_df_entry['section_id'] = row['section_id']
+
+        bb_df_entry['chainage_m'] = row['chainage_m']
+
+        bb_df_entry['section_elev_m'] = row['section_elev_m']
+
+        pres = bb_df_entry['p_from_bar'].iloc[0]
+
+        results_df = pd.concat([results_df,bb_df_entry])
+    
+    results_df = results_df.sort_values(by='chainage_m',ascending=True)
+
+    return results_df
