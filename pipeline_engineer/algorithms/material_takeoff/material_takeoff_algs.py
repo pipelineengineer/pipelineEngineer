@@ -42,13 +42,18 @@ from qgis.core import (
     QgsProcessingParameterNumber,
     QgsProcessingParameterEnum,
     QgsProcessingParameterBoolean,
-    QgsProcessingParameterExpression
+    QgsProcessingParameterExpression,
+    QgsProcessingParameterString,
+    QgsProcessingOutputLayerDefinition,
+    QgsProcessingContext
 )
 
 from .logic.tee_junctions import summarise_tees
 from .logic.bends import summarise_bends
 from .logic.four_way_unions import summarise_four_way_unions
-
+from .logic.pipe_summariser import pipe_summariser
+from .logic.point_summariser import summarise_points
+from .logic.attach_pipe_attributes import attach_pipe_attributes
 
 class TeeJunctionsAlgorithm(QgsProcessingAlgorithm):
 
@@ -389,3 +394,474 @@ class FourWayUnionsAlgorithm(QgsProcessingAlgorithm):
     def createInstance(self):
         return FourWayUnionsAlgorithm()
     
+class PipeSummariserAlgorithm(QgsProcessingAlgorithm):
+
+    INPUT = 'INPUT'
+    OUTPUT = 'OUTPUT'
+    ID_FIELD = 'ID_FIELD'
+    MATERIAL_EXPRESSION = 'MATERIAL_EXPRESSION'
+    SIZE_EXPRESSION = 'SIZE_EXPRESSION'
+    CLASS_EXPRESSION = 'CLASS_EXPRESSION'
+    LENGTH_EXPRESSION = 'LENGTH_EXPRESSION'
+    SERVICE = 'SERVICE'
+
+    def initAlgorithm(self, config):
+
+        # Input line layer
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.INPUT,
+                self.tr('Input layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+
+        # Field to use as ID (e.g. name, corridor ID, pipe ID, etc)
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.ID_FIELD,
+                self.tr('ID field'),
+                parentLayerParameterName=self.INPUT,
+                type=QgsProcessingParameterField.Any
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.MATERIAL_EXPRESSION,
+                'Line Size Expression',
+                defaultValue="\'PE100\'",
+                parentLayerParameterName=self.INPUT  # or a layer parameter ID
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.SIZE_EXPRESSION,
+                'Line Size Expression',
+                defaultValue="",
+                parentLayerParameterName=self.INPUT  # or a layer parameter ID
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.SERVICE,
+                'Service',
+                defaultValue='Treated Water'
+            )
+)
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.CLASS_EXPRESSION,
+                'Line Class Expression',
+                defaultValue="",
+                parentLayerParameterName=self.INPUT  # or a layer parameter ID
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.LENGTH_EXPRESSION,
+                'Line Length Expression',
+                defaultValue="$length",
+                parentLayerParameterName=self.INPUT  # or a layer parameter ID
+            )
+        )
+
+        # Output
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Pipe Summary Table')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+
+        # Retrieve layer source
+        source = self.parameterAsSource(parameters, self.INPUT, context)
+
+        # Convert to a materialised QgsVectorLayer (so it can be processed normally)
+        layer = source.materialize(QgsFeatureRequest())
+
+        # Retrieve ID field selected by user
+        corridor_id_field = self.parameterAsString(parameters, self.ID_FIELD, context)
+        
+        material_formula = self.parameterAsExpression(parameters, self.MATERIAL_EXPRESSION, context)
+        
+        size_formula = self.parameterAsExpression(parameters, self.SIZE_EXPRESSION, context)
+        
+        class_formula = self.parameterAsExpression(parameters, self.CLASS_EXPRESSION, context)
+        
+        length_formula = self.parameterAsExpression(parameters, self.LENGTH_EXPRESSION, context)
+
+        service = self.parameterAsString(parameters, self.SERVICE, context)
+
+        # Run your tee junction pipeline
+        result_layer = pipe_summariser(layer=layer,
+                                       corridor_id_field=corridor_id_field,
+                                       size_formula=size_formula,
+                                       class_formula=class_formula,
+                                       length_formula=length_formula,
+                                       material_formula=material_formula,
+                                       service=service)
+
+        layer_name = result_layer.name()
+
+        # Create sink with the fields, geometry type and CRS of the output layer
+        sink, dest_id = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            result_layer.fields(),
+            result_layer.wkbType(),
+            result_layer.sourceCrs()
+        )
+
+        # Add resulting features to sink
+        for f in result_layer.getFeatures():
+            if feedback.isCanceled():
+                break
+            sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+        return {self.OUTPUT: dest_id}
+
+    def name(self):
+        return 'pipe_summariser'
+
+    def displayName(self):
+        return self.tr('Pipe Summariser')
+
+    def group(self):
+        return self.tr(self.groupId())
+
+    def groupId(self):
+        return 'Material Takeoff'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def shortHelpString(self):
+        return self.tr("""
+    Summarises a pipe layer by return it's size, class and length.
+    """)
+
+    def createInstance(self):
+        return PipeSummariserAlgorithm()
+
+class PointSummariserAlgorithm(QgsProcessingAlgorithm):
+
+    POINT_LAYER = 'POINT_LAYER'
+    LINE_LAYER = 'LINE_LAYER'
+    POINT_ID_EXPRESSION = 'POINT_ID_EXPRESSION'
+    JOIN_TO_LINE_LAYER = 'JOIN_TO_LINE_LAYER'
+    LINE_ID_FIELD = 'LINE_ID_FIELD'
+    FIELDS_TO_RETAIN = 'FIELDS_TO_RETAIN'
+    SERVICE = 'SERVICE'
+    ASSEMBLY_EXPRESSION = 'ASSEMBLY_EXPRESSION'
+    OUTPUT = 'OUTPUT'
+
+    def initAlgorithm(self, config):
+
+        # Input Point layer
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.POINT_LAYER,
+                self.tr('Point layer'),
+                [QgsProcessing.TypeVectorPoint]
+            )
+        )
+
+        # Point Expression
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.POINT_ID_EXPRESSION,
+                'ID Expression',
+                defaultValue="",
+                parentLayerParameterName=self.POINT_LAYER  # or a layer parameter ID
+            )
+        )
+
+        self.addParameter(
+                QgsProcessingParameterBoolean(
+                self.JOIN_TO_LINE_LAYER, 'Join Points To Line Layer?',
+                defaultValue=True
+            )
+        )
+        
+        # Field to use as ID (e.g. name, corridor ID, pipe ID, etc)
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.LINE_LAYER,
+                self.tr('Line layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+        
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.LINE_ID_FIELD,
+                self.tr('Line ID field'),
+                parentLayerParameterName=self.LINE_LAYER,
+                type=QgsProcessingParameterField.Any
+            )
+        )
+        
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.FIELDS_TO_RETAIN,
+                self.tr('Fields to retain'),
+                parentLayerParameterName=self.POINT_LAYER,
+                allowMultiple=True,
+                optional=True
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.SERVICE,
+                'Service',
+                defaultValue='Treated Water'
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterExpression(
+                self.ASSEMBLY_EXPRESSION,
+                'Assembly Expression',
+                defaultValue="",
+                parentLayerParameterName=self.POINT_LAYER  # or a layer parameter ID
+            )
+        )
+
+
+        # Output
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Point Layer Summary')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+
+        # Retrieve layer source
+        source = self.parameterAsSource(parameters, self.POINT_LAYER, context)
+
+        # Convert to a materialised QgsVectorLayer (so it can be processed normally)
+        point_layer = source.materialize(QgsFeatureRequest())
+
+        line_source = self.parameterAsSource(parameters, self.LINE_LAYER, context)
+
+        line_layer = line_source.materialize(QgsFeatureRequest())
+
+        # Retrieve ID field selected by user
+        point_id_formula = self.parameterAsExpression(parameters, self.POINT_ID_EXPRESSION, context)
+        join_to_line_layer = self.parameterAsBool(parameters, self.JOIN_TO_LINE_LAYER, context)
+        line_id_field = self.parameterAsString(parameters, self.LINE_ID_FIELD, context)
+        
+        fields_to_retain = self.parameterAsFields(parameters, self.FIELDS_TO_RETAIN, context)
+        if not fields_to_retain:
+            fields_to_retain = []
+
+        service = self.parameterAsString(parameters, self.SERVICE, context)
+        assembly_formula = self.parameterAsExpression(parameters, self.ASSEMBLY_EXPRESSION, context)
+
+        # Run your tee junction pipeline
+        result_layer = summarise_points(point_layer,point_id_formula,
+                     join_to_line_layer,
+                     line_layer,line_id_field,
+                     fields_to_retain,service,assembly_formula)
+
+        # Create sink with the fields, geometry type and CRS of the output layer
+        sink, dest_id = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            result_layer.fields(),
+            result_layer.wkbType(),
+            result_layer.sourceCrs()
+        )
+
+        # Add resulting features to sink
+        for f in result_layer.getFeatures():
+            if feedback.isCanceled():
+                break
+            sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+        return {self.OUTPUT: dest_id}
+
+    def name(self):
+        return 'summarise_point_layers'
+
+    def displayName(self):
+        return self.tr('Summarise Point Layers')
+
+    def group(self):
+        return self.tr(self.groupId())
+
+    def groupId(self):
+        return 'Material Takeoff'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def shortHelpString(self):
+        return self.tr("""
+        Summarises a point layer.
+    """)
+
+    def createInstance(self):
+        return PointSummariserAlgorithm()
+
+class AttachLineDetailsAlgorithm(QgsProcessingAlgorithm):
+
+    POINT_LAYER = 'POINT_LAYER'
+    POINT_FIELDS_CONTAINING_LINES = 'POINT_FIELDS_CONTAINING_LINES'
+    SERVICE = 'SERVICE'
+    REMOVE_LINE_SERVICE = 'REMOVE_LINE_SERVICE'
+    LINE_LAYER = 'LINE_LAYER'
+    LINE_ID_FIELD = 'LINE_ID_FIELD'
+    LINE_ATTRIBUTES_TO_COPY = 'LINE_ATTRIBUTES_TO_COPY'
+    OUTPUT = 'OUTPUT'
+
+    def initAlgorithm(self, config):
+
+        # Input Point layer
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.POINT_LAYER,
+                self.tr('Point layer'),
+                [QgsProcessing.TypeVectorPoint]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.POINT_FIELDS_CONTAINING_LINES,
+                self.tr('Point Fields Containing Lines'),
+                parentLayerParameterName=self.POINT_LAYER,
+                allowMultiple=True,
+                optional=False
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterString(
+                self.SERVICE,
+                'Service',
+                defaultValue='Treated Water'
+            )
+        )
+
+        self.addParameter(
+                QgsProcessingParameterBoolean(
+                self.REMOVE_LINE_SERVICE, 'Remove Line Service?',
+                defaultValue=True
+            )
+        )
+
+        # Field to use as ID (e.g. name, corridor ID, pipe ID, etc)
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.LINE_LAYER,
+                self.tr('Line layer'),
+                [QgsProcessing.TypeVectorLine]
+            )
+        )
+ 
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.LINE_ID_FIELD,
+                self.tr('Line ID field'),
+                parentLayerParameterName=self.LINE_LAYER,
+                type=QgsProcessingParameterField.Any
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.LINE_ATTRIBUTES_TO_COPY,
+                self.tr('Line Attributes To Copy'),
+                parentLayerParameterName=self.LINE_LAYER,
+                allowMultiple=True,
+                optional=False
+            )
+        )
+
+        # Output
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Line Attributes Added')
+            )
+        )
+
+    def processAlgorithm(self, parameters, context, feedback):
+
+        # Retrieve layer source
+        source = self.parameterAsSource(parameters, self.POINT_LAYER, context)
+
+        # Convert to a materialised QgsVectorLayer (so it can be processed normally)
+        point_layer = source.materialize(QgsFeatureRequest())
+
+        line_source = self.parameterAsSource(parameters, self.LINE_LAYER, context)
+
+        line_layer = line_source.materialize(QgsFeatureRequest())
+
+        # Retrieve ID field selected by user
+        remove_line_service = self.parameterAsBool(parameters, self.REMOVE_LINE_SERVICE, context)
+        line_id_field = self.parameterAsString(parameters, self.LINE_ID_FIELD, context)
+        
+        point_fields_containing_lines = self.parameterAsFields(parameters, self.POINT_FIELDS_CONTAINING_LINES, context)
+
+        service = self.parameterAsString(parameters, self.SERVICE, context)
+
+        line_attributes_to_copy = self.parameterAsFields(parameters, self.LINE_ATTRIBUTES_TO_COPY, context)
+
+        # Run your tee junction pipeline
+        result_layer = attach_pipe_attributes(point_layer,point_fields_containing_lines,
+                            service, remove_line_service,
+                           line_layer,line_id_field,line_attributes_to_copy)
+
+        # Create sink with the fields, geometry type and CRS of the output layer
+        sink, dest_id = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            result_layer.fields(),
+            result_layer.wkbType(),
+            result_layer.sourceCrs()
+        )
+
+        # Add resulting features to sink
+        for f in result_layer.getFeatures():
+            if feedback.isCanceled():
+                break
+            sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+        return {self.OUTPUT: dest_id}
+
+    def name(self):
+        return 'add_line_attributes'
+
+    def displayName(self):
+        return self.tr('Add Line Attributes')
+
+    def group(self):
+        return self.tr(self.groupId())
+
+    def groupId(self):
+        return 'Material Takeoff'
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def shortHelpString(self):
+        return self.tr("""
+        Summarises a point layer.
+    """)
+
+    def createInstance(self):
+        return AttachLineDetailsAlgorithm()

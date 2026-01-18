@@ -167,7 +167,11 @@ def beggs_brill_method(gas_flow_rate,liquid_flow_rate,
     #print('Pressure Drop (Friction): ',pres_drop_fric,'bar')
     #print('Pressure Drop (Total): ',total_pres_drop,'bar')
 
+
     inlet_pres = pres + total_pres_drop
+
+    if inlet_pres <= 0:
+        inlet_pres = pres
 
     #print(total_pres_drop)
     #print(pres)

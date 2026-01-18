@@ -70,7 +70,7 @@ def summarise_bends(layer,id_field,min_bend_angle,feature_id_exp):
     
     id_field_added = processing.run("native:fieldcalculator", 
                                     {'INPUT':small_bends_removed,
-                                     'FIELD_NAME':'feature',
+                                     'FIELD_NAME':'feat_id',
                                      'FIELD_TYPE':2,
                                      'FIELD_LENGTH':0,
                                      'FIELD_PRECISION':0,
@@ -80,7 +80,7 @@ def summarise_bends(layer,id_field,min_bend_angle,feature_id_exp):
     refactored = processing.run("native:refactorfields", 
                                     {'INPUT':id_field_added,
                                      'FIELDS_MAPPING':[
-                                                        {'alias': '','comment': '','expression': '"feature"','length': 0,'name': 'feature','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
+                                                        {'alias': '','comment': '','expression': '"feat_id"','length': 0,'name': 'feat_id','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
                                                         {'alias': '','comment': '','expression': '"angle"','length': 0,'name': 'angle','precision': 0,'sub_type': 0,'type': 6,'type_name': 'double precision'},
                                                         {'alias': '','comment': '','expression': '"corridor"','length': 255,'name': 'corridor','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'}
                                                        ],

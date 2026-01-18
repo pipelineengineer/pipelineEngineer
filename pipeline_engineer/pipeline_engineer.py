@@ -41,6 +41,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu
 from qgis.utils import iface
 
 from .ui.pp_components.pp_network_component_dialog import *
+from .ui.mto_builder.material_takeoff_builder_dockwidget import *
 
 cmd_folder = os.path.split(inspect.getfile(inspect.currentframe()))[0]
 
@@ -83,19 +84,28 @@ class PipelineEngineerPlugin(object):
         action1.triggered.connect(self.launch_network_dialog)  # Connect to proper method
         pandapipes_for_qgis.addAction(action1)
 
+        # MTO BUILDER
+        
+        mto_builder = QMenu("MTO Builder", self.iface.mainWindow())
+        self.menu.addMenu(mto_builder)
+
+        
+        # Add menu items
+        action2 = QAction("Launch MTO Builder", parent=self.menu)
+        action2.triggered.connect(self.launch_mto_builder_dialog)  # Connect to proper method
+        mto_builder.addAction(action2)
 
     def launch_network_dialog(self):
         self.comp_dialog = PPComponentDialog(self.iface.mainWindow())
         self.comp_dialog.show()
 
-    def launch_pipeflow_dialog(self):
-        self.comp_dialog = PPRunPipeFlowDialog(self.iface.mainWindow())
-        self.comp_dialog.show()
+    def launch_mto_builder_dialog(self):
+        self.dockwidget = MaterialTakeOffBuilderDockWidget()
 
-    def launch_beggs_brill_dialog(self):
-        self.comp_dialog = BeggsBrillDialog(self.iface.mainWindow())
-        self.comp_dialog.show()
-
+        self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+        self.dockwidget.show()
+        
+        
     def unload(self):
         # Remove processing provider
         QgsApplication.processingRegistry().removeProvider(self.provider)

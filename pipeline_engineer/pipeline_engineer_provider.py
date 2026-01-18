@@ -72,6 +72,9 @@ class PipelineEngineerProvider(QgsProcessingProvider):
         self.addAlgorithm(TeeJunctionsAlgorithm())
         self.addAlgorithm(BendsAlgorithm())
         self.addAlgorithm(FourWayUnionsAlgorithm())
+        self.addAlgorithm(PipeSummariserAlgorithm())
+        self.addAlgorithm(PointSummariserAlgorithm())
+        self.addAlgorithm(AttachLineDetailsAlgorithm())
         
         # Pandapipes Algs
         if pandapipes_avail:

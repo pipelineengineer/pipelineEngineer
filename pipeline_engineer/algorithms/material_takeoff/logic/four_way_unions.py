@@ -99,7 +99,7 @@ def summarise_four_way_unions(layer,id_field,id_expression):
     
     id_field_added = processing.run("native:fieldcalculator", 
                                     {'INPUT':dropped,
-                                     'FIELD_NAME':'feature',
+                                     'FIELD_NAME':'feat_id',
                                      'FIELD_TYPE':2,
                                      'FIELD_LENGTH':0,
                                      'FIELD_PRECISION':0,
@@ -109,7 +109,7 @@ def summarise_four_way_unions(layer,id_field,id_expression):
     refactored = processing.run("native:refactorfields", 
                                     {'INPUT':id_field_added,
                                      'FIELDS_MAPPING':[
-                                                        {'alias': '','comment': '','expression': '"feature"','length': 0,'name': 'feature','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
+                                                        {'alias': '','comment': '','expression': '"feat_id"','length': 0,'name': 'feat_id','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
                                                         {'alias': '','comment': '','expression': '"branch_1"','length': 255,'name': 'branch_1','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
                                                         {'alias': '','comment': '','expression': '"branch_2"','length': 255,'name': 'branch_2','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},
                                                         {'alias': '','comment': '','expression': '"branch_3"','length': 255,'name': 'branch_3','precision': 0,'sub_type': 0,'type': 10,'type_name': 'text'},

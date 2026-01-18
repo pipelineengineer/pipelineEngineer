@@ -174,8 +174,13 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
                                             'END_OFFSET':0,
                                             'OUTPUT':'memory:'})['OUTPUT']
 
-        chainage_calculated = processing.run("native:fieldcalculator", 
+        geom_fixed = processing.run("native:fixgeometries", 
                                             {'INPUT':points_along_lines,
+                                             'METHOD':1,
+                                             'OUTPUT':'memory:'})['OUTPUT']
+
+        chainage_calculated = processing.run("native:fieldcalculator", 
+                                            {'INPUT':geom_fixed,
                                             'FIELD_NAME':'chainage_m',
                                             'FIELD_TYPE':0,
                                             'FIELD_LENGTH':0,
