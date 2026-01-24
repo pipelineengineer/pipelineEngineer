@@ -59,40 +59,207 @@ from PyQt5.QtCore import QCoreApplication
 from .logic.correct_directionality import *
 from .logic.run_beggs_brill_pipeflow import *
 
-class BeggsBrillNetworkSkeleton(QgsProcessingAlgorithm):
+class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
 
-    NETWORK_LAYER = 'NETWORK_LAYER'
-    RASTER = 'RASTER'
-    CHAINAGE = 'CHAINAGE'
-    LOAD_LAYERS = 'LOAD_LAYERS'
+    INPUT = 'INPUT'
+    CHECK_SELECTED = 'CHECK_SELECTED'
     OUTPUT = 'OUTPUT'
+    LAYERS = 'LAYERS'
+    PIPEFLOW_FLUID = 'PIPEFLOW_FLUID'
+    LIQUID = 'LIQUID'
+    GAS = 'GAS'
+    GAS_FRACTION = 'GAS_FRACTION'
+    SURF_TENS = 'SURF_TENS'
+    AMBIENT_TEMP = 'AMBIENT_TEMP'
+    FLUID_PRES = 'FLUID_PRES'
+    RETURN_NETWORK = 'RETURN_NETWORK'
+    CHAINAGE = 'CHAINAGE'
+    DEM = 'DEM'
+    CALC_MODE = 'CALC_MODE'
+    MAX_ITER_HYD = 'MAX_ITER_HYD'
+    MAX_ITER_THERM = 'MAX_ITER_THERM'
+    PRES_TOL = 'PRES_TOL'
+    VEL_TOL = 'VEL_TOL'
+    TEMP_TOL = 'TEMP_TOL'
+    RES_TOL = 'RES_TOL'
+    FRIC_MODEL = 'FRIC_MODEL'
+    ALPHA = 'ALPHA'
+    NONLINEAR_METHOD = 'NONLINEAR_METHOD'
+    UPDATE_HYD_ONLY = 'UPDATE_HYD_ONLY'
+    CHECK_CONNECTIVITY = 'CHECK_CONNECTIVITY'
+    QUIT_ON_INCONSISTENCY = 'QUIT_ON_INCONSISTENCY'
+    USE_NUMBA = 'USE_NUMBA'
+    LOAD_LAYERS = 'LOAD_LAYERS'
 
     def initAlgorithm(self, config):
 
-        # Input line layer
         self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.NETWORK_LAYER,
-                self.tr('Select Pipe Result Layer'),
-                [QgsProcessing.TypeVectorLine]
+            QgsProcessingParameterMultipleLayers(
+                name=self.LAYERS,
+                description='Select Network Layers',
+                layerType=QgsProcessing.TypeVector
             )
         )
 
-        # Input raster layer
         self.addParameter(
-            QgsProcessingParameterRasterLayer(
-                self.RASTER,
-                self.tr('Select Raster Layer')
+            QgsProcessingParameterEnum(
+                name=self.PIPEFLOW_FLUID,
+                description='Select Fluid',
+                options=["hgas","lgas","hydrogen","methane","water",
+                         "biomethane_pure","biomethane_treated","air"],
+                defaultValue=4  
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                name=self.LIQUID,
+                description='Select Liquid Phase',
+                options=["water"],
+                defaultValue=0  
             )
         )
         
         self.addParameter(
-            QgsProcessingParameterNumber(
-                self.CHAINAGE, 'Chainage',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=100000, defaultValue=20
+            QgsProcessingParameterEnum(
+                name=self.GAS,
+                description='Select Fluid',
+                options=["hgas","lgas","hydrogen","methane",
+                         "biomethane_pure","biomethane_treated","air"],
+                defaultValue=3 
             )
         )
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.GAS_FRACTION, 'Gas Fraction',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=0.5
+        ))
+        
+        self.addParameter(QgsProcessingParameterNumber(
+            self.SURF_TENS, 'Surface Tension',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=0.072
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.AMBIENT_TEMP, 'Ambient Temperature',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=100000, defaultValue=293.15
+        ))
+        
+        self.addParameter(QgsProcessingParameterNumber(
+            self.FLUID_PRES, 'Average Mixture Pressure (Used for Calculating Phase Properties)',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=100000, defaultValue=1
+        ))
+
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.RETURN_NETWORK, 'Return Network Skeleton?',
+            defaultValue=True
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.CHAINAGE, 'Chainage',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=100000, defaultValue=20
+        ))
+
+        self.addParameter(
+            QgsProcessingParameterRasterLayer(
+                self.DEM,
+                self.tr('Select DEM Layer')
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                name=self.CALC_MODE,
+                description='Calculation Mode',
+                options=['hydraulics', 'bidirectional', 'sequential'],
+                defaultValue=0  
+            )
+        )
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.MAX_ITER_HYD, 'Maximum Iterations (Hydraulic)',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1e5, defaultValue=10000
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.MAX_ITER_THERM, 'Maximum Iterations (Thermal)',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1e5, defaultValue=10000
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.PRES_TOL, 'Pressure Error Tolerance',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=1e-4
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.VEL_TOL, 'Velocity Error Tolerance',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=1e-4
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.TEMP_TOL, 'Temperature Error Tolerance',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=1e-4
+        ))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.RES_TOL, 'Residual Tolerance',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1, defaultValue=1e-3
+        ))
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                name=self.FRIC_MODEL,
+                description='Friction Model',
+                options=['nikuradse', 'colebrook'],
+                defaultValue=1
+            )
+        )
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.ALPHA, 'Alpha',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=0, maxValue=1e5, defaultValue=1
+        ))
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                name=self.NONLINEAR_METHOD,
+                description='Nonlinear Method',
+                options=['constant', 'automatic'],
+                defaultValue=0
+            )
+        )
+
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.UPDATE_HYD_ONLY, 'Update Hydraulic Matrix Only?',
+            defaultValue=False
+        ))
+
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.CHECK_CONNECTIVITY, 'Check Connectivity?',
+            defaultValue=True
+        ))
+
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.QUIT_ON_INCONSISTENCY, 'Quit on Inconsistency?',
+            defaultValue=False
+        ))
+
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.USE_NUMBA, 'Use Numba?',
+            defaultValue=True
+        ))
 
         self.addParameter(QgsProcessingParameterBoolean(
             self.LOAD_LAYERS, 'Load Layers?',
@@ -107,203 +274,95 @@ class BeggsBrillNetworkSkeleton(QgsProcessingAlgorithm):
             )
         )
 
+    # -------------------------------------------------------
+    # PROCESS
+    # -------------------------------------------------------
+
     def processAlgorithm(self, parameters, context, feedback):
+
+        # MULTIPLE LAYERS
+        layers = self.parameterAsLayerList(parameters, self.LAYERS, context)
+
+        if not layers:
+            raise QgsProcessingException("No valid input layers selected.")
+
+        # Extract all parameters
+        fluid_index = self.parameterAsInt(parameters, self.PIPEFLOW_FLUID, context)
+        mode_index = self.parameterAsInt(parameters, self.CALC_MODE, context)
+        max_iter_hyd = self.parameterAsDouble(parameters, self.MAX_ITER_HYD, context)
+        max_iter_therm = self.parameterAsDouble(parameters, self.MAX_ITER_THERM, context)
+        tol_p = self.parameterAsDouble(parameters, self.PRES_TOL, context)
+        tol_m = self.parameterAsDouble(parameters, self.VEL_TOL, context)
+        tol_T = self.parameterAsDouble(parameters, self.TEMP_TOL, context)
+        tol_res = self.parameterAsDouble(parameters, self.RES_TOL, context)
+        ambient_temp = self.parameterAsDouble(parameters, self.AMBIENT_TEMP, context)
+        friction_model_index = self.parameterAsInt(parameters, self.FRIC_MODEL, context)
+        alpha = self.parameterAsDouble(parameters, self.ALPHA, context)
+        nonlinear_method_index = self.parameterAsInt(parameters, self.NONLINEAR_METHOD, context)
+        only_update = self.parameterAsBool(parameters, self.UPDATE_HYD_ONLY, context)
+        check_conn = self.parameterAsBool(parameters, self.CHECK_CONNECTIVITY, context)
+        quit_incons = self.parameterAsBool(parameters, self.QUIT_ON_INCONSISTENCY, context)
+        use_numba = self.parameterAsBool(parameters, self.USE_NUMBA, context)
         
-        pipe_results_layer = self.parameterAsVectorLayer(parameters, self.NETWORK_LAYER, context)
+        load_layers = self.parameterAsBool(parameters, self.LOAD_LAYERS, context)
 
-        chainage = self.parameterAsDouble(parameters, self.CHAINAGE, context)
 
-        raster_layer = self.parameterAsRasterLayer(parameters, self.RASTER, context) 
+        fluids=["hgas","lgas","hydrogen","methane","water","biomethane_pure","biomethane_treated","air"]
 
-        load_layers = self.parameterAsBool(parameters, self.LOAD_LAYERS, context) 
+        liquids=["water"]
 
-        gpkg_path = self.parameterAsFileOutput(parameters, self.OUTPUT, context)
+        gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
+
+        modes=['hydraulics', 'bidirectional', 'sequential']
+
+        load_network_skeleton = self.parameterAsBool(parameters, self.RETURN_NETWORK, context)
+
+        friction_models =['nikuradse', 'colebrook']
+
+        nonlinear_methods =['constant', 'automatic']
+
+        pipeflow_fluid = fluids[fluid_index]
+        mode = modes[mode_index]
+        friction_model = friction_models[friction_model_index]
+        nonlinear_method = nonlinear_methods[nonlinear_method_index]
+        
+        liquid_phase = liquids[self.parameterAsInt(parameters, self.LIQUID, context)]
+        gas_phase = gases[self.parameterAsInt(parameters, self.GAS, context)]
+        gas_fraction = self.parameterAsDouble(parameters, self.GAS_FRACTION, context)
+        surf_tens = self.parameterAsDouble(parameters, self.SURF_TENS, context)
+        
+        fluid_pres =  self.parameterAsDouble(parameters, self.FLUID_PRES, context)
+        
+        chainage =  self.parameterAsDouble(parameters, self.CHAINAGE, context)
+        dem_layer = self.parameterAsRasterLayer(parameters, self.DEM, context) 
+
+        settings = {'max_iter_hyd': max_iter_hyd, 'max_iter_therm': max_iter_therm, 
+            'tol_p': tol_p, 'tol_m': tol_m, 'tol_T': tol_T, 'tol_res': tol_res, 
+            'ambient_temperature': ambient_temp, 
+            'friction_model': friction_model, 'alpha': alpha, 'nonlinear_method': nonlinear_method, 'mode': mode, 
+            'only_update_hydraulic_matrix': only_update, 'check_connectivity': check_conn, 
+            'quit_on_inconsistency_connectivity': quit_incons, 'use_numba': use_numba}
+
+        gpkg_path = self.parameterAsFileOutput(
+                                                parameters,
+                                                self.OUTPUT,
+                                                context
+                                            )
 
         # Run your solver
         feedback.pushInfo("Running pipeflow solver…")
 
-        network_skeleton, network_xyz_layer = create_network_xyz_layer(pipe_results_layer=pipe_results_layer,chainage=chainage,raster_layer=raster_layer,load_layers=load_layers, feedback=feedback)
-
-        processing.run("native:package", 
-                    {'LAYERS':[network_skeleton, network_xyz_layer],
-                     'OUTPUT':gpkg_path,
-                     'OVERWRITE':False,
-                     'SAVE_STYLES':True,
-                     'SAVE_METADATA':True,
-                     'SELECTED_FEATURES_ONLY':False,
-                     'EXPORT_RELATED_LAYERS':False}
-                   )
-
-        return {}
-        
-    def name(self):
-        return 'beggs_brill_skeleton'
-
-    def displayName(self):
-        return self.tr('Beggs and Brill Network Skeleton')
-
-    def group(self):
-        return self.tr(self.groupId())
-
-    def groupId(self):
-        return 'Beggs and Brill'
-
-    def tr(self, string):
-        return QCoreApplication.translate('Processing', string)
-
-    def shortHelpString(self):
-        return self.tr("""
-    Beggs and Brill based solver for calculating pressures from flowrates for multiphase services.
-    
-    Start by running a single-phase pandapipes pipeflow for network with desired fluid.
-    
-    This algorithm will take the pipe results layer as well as a chosen Digital Elevation Model to create a network skeleton.
-    
-    Once algorithm is complete, run "Beggs and Brill Pipe Flow".
-
-    """)
-
-    def createInstance(self):
-        return BeggsBrillNetworkSkeleton()
-
-class BeggsBrillPipeFlow(QgsProcessingAlgorithm):
-
-    NETWORK_LAYER = 'NETWORK_LAYER'
-    XYZ_LAYER = 'XYZ_LAYER'
-    JUNCTION_LAYER = 'JUNCTION_LAYER'
-    GRID_LAYER = 'GRID_LAYER'
-    LIQUID_DENSITY = 'LIQUID_DENSITY'
-    GAS_DENSITY = 'GAS_DENSITY'
-    LIQUID_VISCOSITY = 'LIQUID_VISCOSITY'
-    GAS_VISCOSITY = 'GAS_VISCOSITY'
-    GAS_FRACTION = 'GAS_FRACTION'
-    SURFACE_TENSION = 'SURFACE_TENSION'
-    LOAD_LAYERS = 'LOAD_LAYERS'
-    OUTPUT = 'OUTPUT'
-
-    def initAlgorithm(self, config):
-
-        # Input line layer
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.NETWORK_LAYER,
-                self.tr('Select Network Skeleton Layer'),
-                [QgsProcessing.TypeVectorLine]
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.XYZ_LAYER,
-                self.tr('Select Skeleton XYZ Layer'),
-                [QgsProcessing.TypeVectorPoint]
-            )
-        )
-        
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.JUNCTION_LAYER,
-                self.tr('Select Junction Layer'),
-                [QgsProcessing.TypeVectorPoint]
-            )
-        )
-        
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.GRID_LAYER,
-                self.tr('Select Grid Layer'),
-                [QgsProcessing.TypeVector]
-            )
-        )
-        
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.LIQUID_DENSITY, 'Liquid Density',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=100000, defaultValue=998
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.GAS_DENSITY, 'Gas Density',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=100000, defaultValue=0.65
-            )
-        )
-        
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.LIQUID_VISCOSITY, 'Liquid Viscosity',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=100000, defaultValue=0.001
-            )
-        )
-        
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.GAS_VISCOSITY, 'Gas Viscosity',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=100000, defaultValue=0.000002
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.GAS_FRACTION, 'Gas Fraction',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=1, defaultValue=0.5
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.SURFACE_TENSION, 'Surface Tension',
-                type=QgsProcessingParameterNumber.Double,
-                minValue=0, maxValue=1, defaultValue=0.072
-            )
-        )
-
-        self.addParameter(
-            QgsProcessingParameterBoolean(
-                self.LOAD_LAYERS, 'Load Layers?',
-                defaultValue=True
-            )
-        )
-
-        # Output
-        self.addParameter(QgsProcessingParameterFileDestination(
-                self.OUTPUT,
-                'Output GeoPackage',
-                fileFilter='GeoPackage (*.gpkg)'
-            )
-        )
-
-    def processAlgorithm(self, parameters, context, feedback):
-        
-        network_skeleton = self.parameterAsVectorLayer(parameters, self.NETWORK_LAYER, context)
-        network_xyz = self.parameterAsVectorLayer(parameters, self.XYZ_LAYER, context)
-        
-        grid_layer = self.parameterAsVectorLayer(parameters, self.GRID_LAYER, context)
-        junction_layer = self.parameterAsVectorLayer(parameters, self.JUNCTION_LAYER, context)
-        
-        gas_density = self.parameterAsDouble(parameters, self.GAS_DENSITY, context)
-        gas_viscosity = self.parameterAsDouble(parameters, self.GAS_VISCOSITY, context)
-        liquid_density = self.parameterAsDouble(parameters, self.LIQUID_DENSITY, context)
-        liquid_viscosity = self.parameterAsDouble(parameters, self.LIQUID_VISCOSITY, context)
-        surf_tens = self.parameterAsDouble(parameters, self.SURFACE_TENSION, context)
-        gas_fraction = self.parameterAsDouble(parameters, self.GAS_FRACTION, context)
-        
-        load_layer = self.parameterAsBool(parameters, self.LOAD_LAYERS, context)
-        
-        gpkg_path = self.parameterAsFileOutput(parameters,self.OUTPUT,context)
-
-        # Run your tee junction pipeline
-        result_layers = run_beggs_brill_pipeflow(network_skeleton, network_xyz,
-                             grid_layer, junction_layer,
-                             gas_density,gas_viscosity,
-                             liquid_density, liquid_viscosity,
-                             surf_tens, gas_fraction,load_layer)
+        result_layers = run_beggs_brill_pipeflow(
+                                                layers=layers,
+                                                pipeflow_fluid=pipeflow_fluid,
+                                                args=settings,
+                                                liquid_phase=liquid_phase,gas_phase=gas_phase,
+                                                gas_fraction=gas_fraction,surf_tens=surf_tens,
+                                                fluid_pres=fluid_pres,fluid_temp=ambient_temp,
+                                                load_network_skeleton=load_network_skeleton,
+                                                chainage=chainage,dem_layer=dem_layer,
+                                                feedback=feedback
+                                                )
         
         processing.run("native:package", 
                     {'LAYERS':result_layers,
@@ -315,13 +374,19 @@ class BeggsBrillPipeFlow(QgsProcessingAlgorithm):
                      'EXPORT_RELATED_LAYERS':False}
                    )
 
+        if load_layers:
+            for layer in result_layers:
+                QgsProject.instance().addMapLayer(layer)
+
         return {}
         
+    # -------------------------------------------------------
+
     def name(self):
-        return 'beggs_brill_pipe_flow'
+        return 'beggs_brill_pipeflow'
 
     def displayName(self):
-        return self.tr('Beggs and Brill Pipe Flow')
+        return self.tr('Run Beggs Brill Pipeflow')
 
     def group(self):
         return self.tr(self.groupId())
@@ -333,15 +398,8 @@ class BeggsBrillPipeFlow(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def shortHelpString(self):
-        return self.tr("""
-    Beggs and Brill based solver for calculating pressures from flowrates for multiphase services.
-    
-    Start by following procedure outlined in "Beggs and Brill Network Skeleton" algorithm.
-    
-    Once complete, select grid layer & junction layer to retrieve network pressures.
-    
-    An upated junction and pipe layer will be returned.
-    """)
+        return self.tr("Runs a pandapipes pipeflow for selected layers.")
 
     def createInstance(self):
-        return BeggsBrillPipeFlow()
+        return runBeggsBrillPipeFlowAlgorithm()
+

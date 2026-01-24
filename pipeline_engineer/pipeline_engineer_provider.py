@@ -86,8 +86,9 @@ class PipelineEngineerProvider(QgsProcessingProvider):
             self.addAlgorithm(runPipeFlowAlgorithm())
             
             # Beggs and Brill
-            self.addAlgorithm(BeggsBrillNetworkSkeleton())
-            self.addAlgorithm(BeggsBrillPipeFlow())
+            #self.addAlgorithm(BeggsBrillNetworkSkeleton())
+            #self.addAlgorithm(BeggsBrillPipeFlow())
+            self.addAlgorithm(runBeggsBrillPipeFlowAlgorithm())
             
 
     def id(self):

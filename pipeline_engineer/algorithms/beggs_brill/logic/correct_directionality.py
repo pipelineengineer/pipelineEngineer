@@ -2,7 +2,7 @@ import os
 import sys
 import processing
 
-from qgis.core import (QgsVectorLayer,QgsField,QgsFields,QgsFeature,QgsGeometry,QgsPointXY,QgsProject,QgsProcessingFeedback)
+from qgis.core import (QgsVectorLayer,QgsField,QgsFields,QgsFeature,QgsGeometry,QgsPointXY,QgsProject,QgsProcessingFeedback,QgsProperty)
 
 import pandapipes
 import pandas as pd
@@ -13,11 +13,7 @@ sys.path.insert(0, parent_dir)  # Add it to sys.path
 
 from ...general_logic.function_helpers import *
 
-def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layers, feedback):
-    # If no feedback provided, use a dummy one
-    if feedback is None:
-        feedback = QgsProcessingFeedback()
-        
+def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layers): 
     in_service_lines = processing.run("native:extractbyexpression", 
                                       {'INPUT':pipe_results_layer,
                                        'EXPRESSION':'"in_service" = TRUE',
@@ -125,59 +121,38 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
 
         re_calc_graduated(layer=dropped_fields_lines,qml_path=selected_style)
 
+    # Checking Layer Measurement Units
+    crs = dropped_fields_lines.crs()
+    units = crs.mapUnits()
+
+    print('UNITS: ',QgsUnitTypes.toString(units))
+
+    divider = 1
+
     # XYZ Data
-    network_df = layer_to_df(dropped_fields_lines)
+    if units != QgsUnitTypes.DistanceMeters:
+        chainage = chainage/111111
+        divider = 111111
 
-    network_lines = network_df['name'].tolist()
+    print(chainage)
 
-    layers_to_merge = []
+    exp = f'CASE\r\nWHEN ($length / {divider}) < {chainage} THEN ($length/{divider})/3\r\nELSE {chainage}\r\nEND'
+    
+    print(exp)
 
-    total_lines = len(network_lines)
-
-    for i, line in enumerate(network_lines):
-        if feedback.isCanceled():
-            return None, None  # Stop if user cancels
-
-        # Print to log
-        feedback.pushInfo(f"Processing line {i+1}/{total_lines}: {line}")
-
-        # Update progress (0.0 to 100.0)
-        feedback.setProgress(int((i+1)/total_lines * 100))
-
-        exp_extract = processing.run("native:extractbyexpression", 
+    points_along_lines = processing.run("native:pointsalonglines", 
                                         {'INPUT':dropped_fields_lines,
-                                         'EXPRESSION':f'"name" = \'{line}\'',
+                                        'DISTANCE':QgsProperty.fromExpression(exp),
+                                        'START_OFFSET':0,
+                                        'END_OFFSET':0,
+                                        'OUTPUT':'memory:'})['OUTPUT']
+
+    geom_fixed = processing.run("native:fixgeometries", 
+                                        {'INPUT':points_along_lines,
+                                         'METHOD':1,
                                          'OUTPUT':'memory:'})['OUTPUT']
 
-        chainage_calculated = processing.run("native:fieldcalculator", 
-                                            {'INPUT':exp_extract,
-                                            'FIELD_NAME':'temp_length',
-                                            'FIELD_TYPE':0,
-                                            'FIELD_LENGTH':0,
-                                            'FIELD_PRECISION':0,
-                                            'FORMULA':'$length',
-                                            'OUTPUT':'memory:'})['OUTPUT']
-
-        length_df = layer_to_df(chainage_calculated)
-
-        length = float(length_df['temp_length'].iloc[0])
-
-        if length < chainage:
-            chainage_deg = (0.9 *length) / 111111
-        else:
-            chainage_deg = chainage / 111111
-
-        points_along_lines = processing.run("native:pointsalonglines", 
-                                            {'INPUT':exp_extract,
-                                            'DISTANCE':chainage_deg,
-                                            'START_OFFSET':0,
-                                            'END_OFFSET':0,
-                                            'OUTPUT':'memory:'})['OUTPUT']
-
-        geom_fixed = processing.run("native:fixgeometries", 
-                                            {'INPUT':points_along_lines,
-                                             'METHOD':1,
-                                             'OUTPUT':'memory:'})['OUTPUT']
+    if units == QgsUnitTypes.DistanceDegrees:
 
         chainage_calculated = processing.run("native:fieldcalculator", 
                                             {'INPUT':geom_fixed,
@@ -188,29 +163,45 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
                                             'FORMULA':'round("distance"*111111,0)',
                                             'OUTPUT':'memory:'})['OUTPUT']
 
-        raster_sampling = processing.run("native:rastersampling", 
-                                            {'INPUT':chainage_calculated,
-                                            'RASTERCOPY':raster_layer,
-                                            'COLUMN_PREFIX':'elev',
+    else:
+        
+        chainage_calculated = processing.run("native:fieldcalculator", 
+                                            {'INPUT':geom_fixed,
+                                            'FIELD_NAME':'chainage_m',
+                                            'FIELD_TYPE':0,
+                                            'FIELD_LENGTH':0,
+                                            'FIELD_PRECISION':0,
+                                            'FORMULA':'round("distance",0)',
                                             'OUTPUT':'memory:'})['OUTPUT']
 
-        dropped_fields = processing.run("native:deletecolumn", 
-                                            {'INPUT':raster_sampling,
-                                            'COLUMN':['distance','angle'],
-                                            'OUTPUT':'memory:'})['OUTPUT']
-    
+    raster_sampling = processing.run("native:rastersampling", 
+                                        {'INPUT':chainage_calculated,
+                                        'RASTERCOPY':raster_layer,
+                                        'COLUMN_PREFIX':'elev',
+                                        'OUTPUT':'memory:'})['OUTPUT']
 
-        layers_to_merge.append(dropped_fields)
-
-    merged_xyz = processing.run("native:mergevectorlayers", 
-                                {'LAYERS':layers_to_merge,
-                                    'CRS':None,
-                                    'OUTPUT':'memory:'})['OUTPUT']
+    dropped_fields = processing.run("native:deletecolumn", 
+                                        {'INPUT':raster_sampling,
+                                        'COLUMN':['distance','angle'],
+                                        'OUTPUT':'memory:'})['OUTPUT']
     
     dropped_fields_two = processing.run("native:deletecolumn", 
-                                        {'INPUT':merged_xyz,
+                                        {'INPUT':dropped_fields,
                                         'COLUMN':['layer','path'],
                                         'OUTPUT':'memory:'})['OUTPUT']
+
+    selected_style = 'xyz_style_two.qml'
+
+    if selected_style:
+        style_path = os.path.join(folder_path, selected_style)
+
+        print(style_path)
+
+        dropped_fields_two.loadNamedStyle(style_path)
+        dropped_fields_two.triggerRepaint()
+
+        re_calc_graduated(layer=dropped_fields_two,qml_path=selected_style)
+
 
     if load_layers:
         dropped_fields_two.setName('Skeleton XYZ Data')
@@ -218,4 +209,4 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
         dropped_fields_lines.setName('Network Skeleton')
         QgsProject.instance().addMapLayer(dropped_fields_lines)
 
-    return dropped_fields_lines, dropped_fields_two
+    return dropped_fields_two, dropped_fields_lines
