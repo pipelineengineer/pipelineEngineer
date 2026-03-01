@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>484</width>
-    <height>992</height>
+    <width>491</width>
+    <height>1083</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,133 +16,387 @@
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="widgetResizable">
-       <bool>true</bool>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
       </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>464</width>
-         <height>950</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="7" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Pipelines and Features</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="scrollArea_2">
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QGroupBox" name="groupBox_2">
-          <property name="title">
-           <string>Pipeline Corridors</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_8">
-           <item row="2" column="0">
-            <widget class="QPushButton" name="pbCorridorSummary">
-             <property name="text">
-              <string>Summarise Corridors and Copy to Clipboard</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QTreeWidget" name="twPipelineLayers">
-             <property name="headerHidden">
-              <bool>true</bool>
-             </property>
-             <column>
-              <property name="text">
-               <string notr="true">1</string>
+          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>447</width>
+             <height>997</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="0">
+             <widget class="QGroupBox" name="groupBox_4">
+              <property name="title">
+               <string>Corridor Summary</string>
               </property>
-             </column>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Select Pipeline Feature Layers:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QPushButton" name="pbLoadCorridorSummaryLayer">
-             <property name="text">
-              <string>Load Corridor Summary Layer</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+              <layout class="QGridLayout" name="gridLayout_6">
+               <item row="1" column="0">
+                <widget class="QgsMapLayerComboBox" name="mlcbLineLayer"/>
+               </item>
+               <item row="6" column="0">
+                <widget class="QLabel" name="label_16">
+                 <property name="text">
+                  <string>Line Size Expression:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_13">
+                 <property name="text">
+                  <string>Line Layer:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="9" column="0">
+                <widget class="QLineEdit" name="leLineServiceDescription"/>
+               </item>
+               <item row="5" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewLineMaterial"/>
+               </item>
+               <item row="11" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewClassExpression"/>
+               </item>
+               <item row="10" column="0">
+                <widget class="QLabel" name="label_18">
+                 <property name="text">
+                  <string>Class Expression:-</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="0">
+                <widget class="QgsFieldComboBox" name="fcbLineLayerIDField"/>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_15">
+                 <property name="text">
+                  <string>Line Material Expression:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="14" column="0">
+                <widget class="QPushButton" name="pbCreateCorridorSummary">
+                 <property name="text">
+                  <string>Create Corridor Summary</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="8" column="0">
+                <widget class="QLabel" name="label_17">
+                 <property name="text">
+                  <string>Service Description:-</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="13" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewLineLengthExpression"/>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_14">
+                 <property name="text">
+                  <string>ID Field:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="7" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewLineSize"/>
+               </item>
+               <item row="12" column="0">
+                <widget class="QLabel" name="label_19">
+                 <property name="text">
+                  <string>Line Length Expression:-</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Pipeline Features</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <item row="22" column="0">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Select Feature Summary:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="4" column="0">
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string>Service Description:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="14" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewPointIDExpression"/>
+               </item>
+               <item row="11" column="0">
+                <widget class="QLabel" name="label_11">
+                 <property name="text">
+                  <string>Feature Service:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="24" column="0">
+                <widget class="QPushButton" name="pbLineAttributes">
+                 <property name="text">
+                  <string>Add Line Attributes</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="8" column="0">
+                <widget class="QLabel" name="label_5">
+                 <property name="text">
+                  <string>Select Feature Layer:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="5" column="0">
+                <widget class="QLineEdit" name="leServiceDescription"/>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_3">
+                 <property name="text">
+                  <string>Select Corridor Summary Layer:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QgsMapLayerComboBox" name="mlcbCorridorSummaryLayer"/>
+               </item>
+               <item row="20" column="0">
+                <widget class="QDoubleSpinBox" name="dsbMinBendAngle"/>
+               </item>
+               <item row="13" column="0">
+                <widget class="QLabel" name="label_6">
+                 <property name="text">
+                  <string>Feature Layer ID Expression:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="15" column="0">
+                <widget class="QLabel" name="label_7">
+                 <property name="text">
+                  <string>Assembly Expression:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="21" column="0">
+                <widget class="QPushButton" name="pbFeatureSummary">
+                 <property name="text">
+                  <string>Create Feature Summary</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="9" column="0">
+                <widget class="QgsMapLayerComboBox" name="mlcbFeatureLayer"/>
+               </item>
+               <item row="18" column="0">
+                <widget class="QCheckBox" name="cbBendsTeesUnions">
+                 <property name="text">
+                  <string>Include Bends, Tees and Unions?</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="12" column="0">
+                <widget class="QLineEdit" name="leService"/>
+               </item>
+               <item row="3" column="0">
+                <widget class="QgsFieldComboBox" name="fcbLineIDField"/>
+               </item>
+               <item row="16" column="0">
+                <widget class="QgsFieldExpressionWidget" name="fewPointAssemblyExpression"/>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_12">
+                 <property name="text">
+                  <string>Select Line ID Field:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="23" column="0">
+                <widget class="QgsMapLayerComboBox" name="mlcbFeatureSummaryLayer"/>
+               </item>
+               <item row="19" column="0">
+                <widget class="QLabel" name="label_20">
+                 <property name="text">
+                  <string>Minimum Bend Angle:-</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>Pipeline Features</string>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>MTO Builder</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_9">
+        <item row="0" column="0">
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="5" column="1">
-            <widget class="QLineEdit" name="leSheetName"/>
-           </item>
-           <item row="8" column="1">
-            <widget class="QPushButton" name="pbCreateAdditionalFittingsLayer">
-             <property name="text">
-              <string>Create Additional Fittings List</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QgsFileWidget" name="fwAssemblyList"/>
-           </item>
-           <item row="6" column="1">
-            <widget class="QPushButton" name="pbFittingsList">
-             <property name="text">
-              <string>Copy Fittings List to Clipboard</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Input Sheet Name:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Navigate to Assembly List:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="1">
-            <widget class="QPushButton" name="pbFittingsListSumLayer">
-             <property name="text">
-              <string>Load Fittings List Summary Layer</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Select Feature Layer:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QgsMapLayerComboBox" name="mlcbFeatureLayer"/>
-           </item>
-          </layout>
+          <widget class="QWidget" name="scrollAreaWidgetContents">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>209</width>
+             <height>452</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_3">
+            <item row="4" column="0" colspan="2">
+             <widget class="QGroupBox" name="groupBox_2">
+              <property name="title">
+               <string>Pipeline Corridors</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_8">
+               <item row="1" column="0">
+                <widget class="QTreeWidget" name="twPipelineLayers">
+                 <property name="headerHidden">
+                  <bool>true</bool>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string notr="true">1</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_8">
+                 <property name="text">
+                  <string>Select Pipeline Layers:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QPushButton" name="pbLoadCorridorSummaryLayer">
+                 <property name="text">
+                  <string>Load Corridor Summary Layer</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="7" column="0" colspan="2">
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="5" column="0" colspan="2">
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>Fitting Lists</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_2">
+               <item row="10" column="1">
+                <widget class="QLabel" name="label">
+                 <property name="text">
+                  <string>Input Sheet Name:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="9" column="1">
+                <widget class="QgsFileWidget" name="fwAssemblyList"/>
+               </item>
+               <item row="11" column="1">
+                <widget class="QLineEdit" name="leSheetName"/>
+               </item>
+               <item row="4" column="0" rowspan="2" colspan="2">
+                <widget class="QTreeWidget" name="twFeaturesLayer">
+                 <property name="headerHidden">
+                  <bool>true</bool>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string notr="true">1</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item row="3" column="0" colspan="2">
+                <widget class="QLabel" name="label_2">
+                 <property name="text">
+                  <string>Select Feature Layers:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="8" column="1">
+                <widget class="QLabel" name="label_10">
+                 <property name="text">
+                  <string>Navigate to Assembly List:</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="13" column="1">
+                <widget class="QPushButton" name="pbCreateAdditionalFittingsLayer">
+                 <property name="text">
+                  <string>Create Additional Fittings List</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="12" column="1">
+                <widget class="QPushButton" name="pbFittingsListSumLayer">
+                 <property name="text">
+                  <string>Load Fittings List Summary Layer</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
@@ -153,6 +407,16 @@
   </widget>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsFieldComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsfieldcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsFieldExpressionWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsfieldexpressionwidget.h</header>
+  </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
    <extends>QWidget</extends>

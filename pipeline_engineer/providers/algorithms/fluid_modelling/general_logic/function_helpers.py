@@ -6,15 +6,23 @@ from qgis.PyQt.QtCore import pyqtSignal
 import pandas as pd
 import numpy as np
 
-from qgis.core import (QgsVectorLayer,QgsField,QgsFields,QgsFeature,QgsGeometry,QgsPointXY,QgsProject)
 from qgis.core import (
-    QgsSymbol,
-    QgsRendererRange,
-    QgsGraduatedSymbolRenderer,
-    QgsProject,
-    QgsWkbTypes,
-    QgsUnitTypes
-)
+                        QgsVectorLayer,
+                        QgsField,
+                        QgsFields,
+                        QgsFeature,
+                        QgsGeometry,
+                        QgsPointXY,
+                        QgsProject,
+                        QgsSymbol,
+                        QgsRendererRange,
+                        QgsGraduatedSymbolRenderer,
+                        QgsProject,
+                        QgsWkbTypes,
+                        QgsUnitTypes,
+                        QgsMapLayer
+                      )
+
 from PyQt5.QtCore import QVariant
 from qgis.core import QgsEditorWidgetSetup, QgsProject
 from qgis.core import QgsProcessingFeatureSourceDefinition, QgsProject, QgsFeatureRequest, QgsVectorLayer, QgsMapLayerProxyModel, QgsMapLayer
@@ -22,14 +30,13 @@ from PyQt5.QtGui import QColor
 import processing
 
 from qgis.core import (
-    QgsVectorLayer,
-    QgsGraduatedSymbolRenderer,
-    QgsRendererRange,
-    QgsSymbol,
-    QgsProject
-)
+                        QgsVectorLayer,
+                        QgsGraduatedSymbolRenderer,
+                        QgsRendererRange,
+                        QgsSymbol,
+                        QgsProject
+                      )
 
-#helper functions
 def field_to_string(layer,field): #converts a field in a layer into a string
     layer_2 = layer
     #ensuring the layer is selected
@@ -57,7 +64,6 @@ def field_to_list(layer,field): #converts a field in a layer into a list
 def field_to_list_non_selected(layer,field): #converts a field in a layer into a list
     layer_list = [f[field] for f in layer]
     return layer_list
-
 
 def load_layer(layer,layer_name): #loads layer by set name to session
     layer.setName(layer_name)
@@ -261,34 +267,3 @@ def re_calc_graduated(layer, qml_path):
         # Reapply and refresh
         layer.setRenderer(renderer)
         layer.triggerRepaint()
-
-def dataframes_to_csv(dataframes,file_names):
-
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # Define new folder name and path
-        new_folder_name = 'working'
-        new_folder_path = os.path.join(script_dir, new_folder_name)
-
-        print(new_folder_path)
-
-        # Create the folder if it doesn't exist
-        os.makedirs(new_folder_path, exist_ok=True)
-
-        result_layers = []
-
-        for i, dataframe in enumerate(dataframes):
-                
-            file_name = file_names[i]
-            file_path = os.path.join(new_folder_path, f'{file_name}.csv')
-            dataframe.to_csv(file_path,index=False)
-        
-            uri = f"file:///{file_path}?delimiter=,&detectTypes=yes&geomType=none"
-
-            results_layer = QgsVectorLayer(uri, f'{file_name}','delimitedtext')
-            
-            results_layer.setName(file_name)
-            
-            result_layers.append(results_layer)
-
-        return result_layers

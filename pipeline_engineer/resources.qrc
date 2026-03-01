@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/pandapipes_for_qgis" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>

@@ -38,6 +38,9 @@ import pandas as pd
 
 from .logic.mto_builder import *
 from .logic.additional_fittings import *
+from .logic.pipeline_features import *
+from .logic.pipeline_feature_functions. pipe_summariser import *
+from .logic.pipeline_feature_functions. attach_pipe_attributes import *
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'material_takeoff_builder_dockwidget_base.ui'))
@@ -59,12 +62,32 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         
         # Combo Boxes
         self.mlcbFeatureLayer.setFilters(QgsMapLayerProxyModel.PointLayer)
+        self.mlcbCorridorSummaryLayer.setFilters(QgsMapLayerProxyModel.LineLayer)
+        self.mlcbFeatureSummaryLayer.setFilters(QgsMapLayerProxyModel.PointLayer)
+        self.mlcbLineLayer.setFilters(QgsMapLayerProxyModel.LineLayer)
+        # Dynamic Combo Boxes
+        
+        def dynamic_combobox(parent_layer,field):
+            parent_layer.layerChanged.connect(lambda layer, fc=field: fc.setLayer(layer if layer and layer.type() == QgsMapLayer.VectorLayer else None))
 
+            # Immediately apply the logic using the current layer
+            layer = parent_layer.currentLayer()
+            if layer and layer.type() == QgsMapLayer.VectorLayer:
+                field.setLayer(layer)
+            else:
+                field.setLayer(None)
+
+        dynamic_combobox(parent_layer=self.mlcbCorridorSummaryLayer,field=self.fcbLineIDField)
+        dynamic_combobox(parent_layer=self.mlcbLineLayer,field=self.fcbLineLayerIDField)
+        
         # Tree Widgets
         # Network Components Tree Widget
         self.populate_pipeline_layer_tree()
         self.twPipelineLayers.setAlternatingRowColors(True)
-
+        
+        self.populate_features_layer_tree()
+        self.twFeaturesLayer.setAlternatingRowColors(True)
+        
         # Connect signals
         QgsProject.instance().layersAdded.connect(self.on_layers_changed)
         QgsProject.instance().layersRemoved.connect(self.on_layers_changed)
@@ -75,46 +98,80 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.fwAssemblyList.setStorageMode(QgsFileWidget.GetFile)
         self.fwAssemblyList.setFilter("Excel files (*.xlsx *.xls)")
         
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        assembly_list_path = os.path.join(script_dir,'logic','pipe_data','specifications.xlsx')
+        self.fwAssemblyList.setFilePath(assembly_list_path)
+        
         # Line Edit
         self.leSheetName.setText('Assembly List')
+        self.leLineServiceDescription.setText('Treated Water')
+        self.leServiceDescription.setText('Treated Water')
+        self.leService.setText('TW')
+        
+        # Expression Widgets
+        
+        # Lines
+        self.fewLineMaterial.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewLineSize.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewClassExpression.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewLineLengthExpression.setLayer(self.mlcbLineLayer.currentLayer())
+        
+        self.fewLineLengthExpression.setExpression('$length')
+        self.fewLineMaterial.setExpression("'PE100'")
+        
+        self.mlcbLineLayer.currentIndexChanged.connect(self.line_layer_changed)
+        
+        # PI
+        self.fewPointIDExpression.setLayer(self.mlcbFeatureLayer.currentLayer())
+        self.fewPointAssemblyExpression.setLayer(self.mlcbFeatureLayer.currentLayer())
+        
+        self.mlcbFeatureLayer.currentIndexChanged.connect(self.feature_layer_changed)
+        
+        # Check Boxes
         
         # Buttons
-        self.pbCorridorSummary.clicked.connect(self.on_pipe_corridor_summary_to_clipboard_clicked)
         self.pbLoadCorridorSummaryLayer.clicked.connect(self.on_load_pipe_corridor_summary_clicked)
-        self.pbFittingsList.clicked.connect(self.on_generate_fittings_list_clicked)
         self.pbFittingsListSumLayer.clicked.connect(self.on_load_fittings_summary_clicked)
         self.pbCreateAdditionalFittingsLayer.clicked.connect(self.on_additional_fittings_list_clicked)
+        
+        self.pbFeatureSummary.clicked.connect(self.on_create_feature_summary_clicked)
+        self.pbLineAttributes.clicked.connect(self.on_add_line_attributes_clicked)
+        self.pbCreateCorridorSummary.clicked.connect(self.on_create_corridor_summary_clicked)
         
     # Non-User Input Functions
     def populate_pipeline_layer_tree(self):
         self.twPipelineLayers.clear()
         for layer in QgsProject.instance().mapLayers().values():
-            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.LineGeometry:
+            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.LineGeometry and 'Summary Table' in layer.name():
                 item = QTreeWidgetItem([layer.name()])
                 item.setCheckState(0, Qt.CheckState.Unchecked)
                 self.twPipelineLayers.addTopLevelItem(item)
 
+    def populate_features_layer_tree(self):
+        self.twFeaturesLayer.clear()
+        for layer in QgsProject.instance().mapLayers().values():
+            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PointGeometry and 'Line Attributes Added' in layer.name():
+                item = QTreeWidgetItem([layer.name()])
+                item.setCheckState(0, Qt.CheckState.Unchecked)
+                self.twFeaturesLayer.addTopLevelItem(item)
+
     def on_layers_changed(self):
         self.populate_pipeline_layer_tree()
+        self.populate_features_layer_tree()
 
+    def feature_layer_changed(self):
+        self.fewPointIDExpression.setLayer(self.mlcbFeatureLayer.currentLayer())
+        self.fewPointAssemblyExpression.setLayer(self.mlcbFeatureLayer.currentLayer())
+    
+    def line_layer_changed(self):
+        self.fewLineMaterial.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewLineSize.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewClassExpression.setLayer(self.mlcbLineLayer.currentLayer())
+        self.fewLineLengthExpression.setLayer(self.mlcbLineLayer.currentLayer())
+        
     # Button Functions
     
-    def on_pipe_corridor_summary_to_clipboard_clicked(self):
-        
-        pipe_layers = []
-
-        for i in range(self.twPipelineLayers.topLevelItemCount()):
-            item = self.twPipelineLayers.topLevelItem(i)
-            if item.checkState(0) == Qt.Checked:
-                component = item.text(0)  # Assuming the field name is in column 0
-                pipe_layers.append(component)
-        
-        corridor_sum_df = corridor_summary(pipe_layers)
-        
-        corridor_sum_df.to_clipboard(index=False)
-        
-        QMessageBox.information(self, "Success!", "Corridor Summary copied to clipboard.")
-
+    # Summarise Corridors
 
     def on_load_pipe_corridor_summary_clicked(self):
         pipe_layers = []
@@ -129,29 +186,71 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         
         layer = load_df_as_layer(dataframe=corridor_sum_df,df_name='corridor_sum_df')
         
-        layer.setName('Pipeline Corridor Summary')
+        layer.selectAll()
         
-        QgsProject.instance().addMapLayer(layer)
+        corridors_layer = processing.run("native:saveselectedfeatures", {'INPUT':layer,'OUTPUT':'memory:'})['OUTPUT']
+        
+        corridors_layer.setName('Pipeline Corridor Summary')
+        
+        QgsProject.instance().addMapLayer(corridors_layer)
 
-    def on_generate_fittings_list_clicked(self):
+    # Features
+    def on_create_corridor_summary_clicked(self):
+        line_layer = self.mlcbLineLayer.currentLayer()
+        line_id_field = self.fcbLineLayerIDField.currentField()
+        service_description = self.leLineServiceDescription.text()
+        material_exp = self.fewLineMaterial.expression()
+        size_exp = self.fewLineSize.expression()
+        class_exp = self.fewClassExpression.expression()
+        length_exp = self.fewLineLengthExpression.expression()
         
+        pipe_summary_table = pipe_summariser(layer=line_layer,corridor_id_field=line_id_field,size_formula=size_exp,class_formula=class_exp,length_formula=length_exp,material_formula=material_exp,service=service_description) 
         
-        assembly_list_path = self.fwAssemblyList.filePath()
+        pipe_summary_table.setName(f'{service_description} Pipe Summary Table')
+        QgsProject.instance().addMapLayer(pipe_summary_table)
+    
+    def on_create_feature_summary_clicked(self):
+        point_layer = self.mlcbFeatureLayer.currentLayer()
+        line_layer = self.mlcbCorridorSummaryLayer.currentLayer()
+        line_id_field = self.fcbLineIDField.currentField()
+        service_description = self.leServiceDescription.text()
+        service = self.leService.text()
+        id_expression = self.fewPointIDExpression.expression()
+        assembly_expression = self.fewPointAssemblyExpression.expression()
+        include_tees_bends_unions = self.cbBendsTeesUnions.isChecked()
+        min_bend_angle = self.dsbMinBendAngle.value()
         
+        feature_summary = summarise_feature_layers(point_layer=point_layer, line_layer=line_layer, 
+                                                   line_id_field=line_id_field, service_description=service_description,
+                                                   min_bend_angle=min_bend_angle,
+                                                   service=service, id_expression=id_expression, assembly_expression=assembly_expression,
+                                                   include_tees_bends_unions=include_tees_bends_unions)
+    
+        feature_summary.setName(f'{service_description} Pipeline Features')
+        QgsProject.instance().addMapLayer(feature_summary)
+    
+    def on_add_line_attributes_clicked(self):
         
-        if assembly_list_path:
-            assy_sheet = self.leSheetName.text()
-            
-            pipeline_feature_layer = self.mlcbFeatureLayer.currentLayer()
-            
-            fittings_list_df = generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
-            
-            print(fittings_list_df.head())
-            
-            fittings_list_df.to_clipboard(index=False)
-            
-        else:
-            QMessageBox.information(self, "Warning", "Assembly List hasn't been selected.")
+        point_layer = self.mlcbFeatureSummaryLayer.currentLayer()
+        line_layer = self.mlcbCorridorSummaryLayer.currentLayer()
+        line_id_field = self.fcbLineIDField.currentField()
+        service_description = self.leServiceDescription.text()
+        service_description_lower = service_description.lower().replace(" ","_")
+        
+        corridor_attributes = []
+        
+        for field in point_layer.fields():
+            if field.name() in ['corridor','branch','header_1','header_2','branch_1','branch_2','branch_3','branch_4']:
+                corridor_attributes.append(field.name())
+        
+        line_attributes_added = attach_pipe_attributes(point_layer,point_fields_containing_lines=corridor_attributes,
+                            service=service_description, remove_line_service=True,
+                           line_layer=line_layer,line_id_field=line_id_field,line_attributes_to_copy=[f'{service_description_lower}_size',f'{service_description_lower}_class'])
+
+        line_attributes_added.setName(f'{point_layer.name()} Line Attributes Added')
+        QgsProject.instance().addMapLayer(line_attributes_added)
+
+    # Fittings
 
     def on_load_fittings_summary_clicked(self):
         assembly_list_path = self.fwAssemblyList.filePath()
@@ -162,15 +261,35 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             
             pipeline_feature_layer = self.mlcbFeatureLayer.currentLayer()
             
-            fittings_list_df = generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
+            pipeline_feature_layers = []
+
+            for i in range(self.twFeaturesLayer.topLevelItemCount()):
+                item = self.twFeaturesLayer.topLevelItem(i)
+                if item.checkState(0) == Qt.Checked:
+                    component = item.text(0)  # Assuming the field name is in column 0
+                    pipeline_feature_layers.append(component)
             
-            print(fittings_list_df.head())
+            if not pipeline_feature_layers:
+                QMessageBox.information(self, "Warning", "No features have been selected.")
+                
+                return
+            
+            merged_points = processing.run("native:mergevectorlayers", 
+                                    {'LAYERS':pipeline_feature_layers,
+                                     'CRS':None,
+                                     'OUTPUT':'memory:'})['OUTPUT']
+            
+            fittings_list_df = generate_fittings_list(assembly_list_path=assembly_list_path,assy_sheet=assy_sheet,pipeline_feature_layer=merged_points)
             
             layer = load_df_as_layer(dataframe=fittings_list_df,df_name='fittings_list_df')
         
-            layer.setName('Fittings List')
+            layer.selectAll()
+        
+            fittings_layer = processing.run("native:saveselectedfeatures", {'INPUT':layer,'OUTPUT':'memory:'})['OUTPUT']
+        
+            fittings_layer.setName('Fittings List')
             
-            QgsProject.instance().addMapLayer(layer)
+            QgsProject.instance().addMapLayer(fittings_layer)
             
         else:
             QMessageBox.information(self, "Warning", "Assembly List hasn't been selected.")

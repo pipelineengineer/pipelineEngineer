@@ -1,12 +1,12 @@
 #/***************************************************************************
-# PipelineEngineer
+# PandapipesForQGIS
 #
-# A collection of Pipeline Engineering Tools.
+# A pipe network modelling tool that can abstract models from GIS layers.
 #							 -------------------
-#		begin				: 2025-12-06
+#		begin				: 2026-02-14
 #		git sha				: $Format:%H$
-#		copyright			: (C) 2025 by Pipeline Engineer
-#		email				: info@pipelineengineer.com.au
+#		copyright			: (C) 2026 by Thomas Raj
+#		email				: lemungineer@gmail.com
 # ***************************************************************************/
 #
 #/***************************************************************************
@@ -38,21 +38,21 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	pipeline_engineer.py 
+	pandapipes_for_qgis.py pandapipes_for_qgis_dialog.py
 
-PLUGINNAME = pipeline_engineer
+PLUGINNAME = pandapipes_for_qgis
 
 PY_FILES = \
 	__init__.py \
-	pipeline_engineer.py 
+	pandapipes_for_qgis.py pandapipes_for_qgis_dialog.py
 
-UI_FILES = 
+UI_FILES = pandapipes_for_qgis_dialog_base.ui
 
-EXTRAS = metadata.txt 
+EXTRAS = metadata.txt icon.png
 
 EXTRA_DIRS =
 
-COMPILED_RESOURCE_FILES = 
+COMPILED_RESOURCE_FILES = resources.py
 
 PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 
@@ -75,7 +75,7 @@ HELP = help/build/html
 
 PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
-RESOURCE_SRC=$(shell grep '^ *<file'  | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
+RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
 .PHONY: default
 default:

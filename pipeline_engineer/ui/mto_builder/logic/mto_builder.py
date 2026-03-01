@@ -60,6 +60,9 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     
     pipeline_feature_df = layer_to_df(pipeline_feature_layer)
     
+    #print(pipeline_feature_df.head())
+    #print(assembly_list_df.head())
+    
     merged_df = pd.merge(left=pipeline_feature_df,right=assembly_list_df,on='assembly',how='left')
     
     merged_df['type_ref'] = merged_df.apply(set_type_ref, axis=1)
@@ -72,21 +75,6 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     merged_df = merged_df[merged_df['filter'] != 'FILTER']
     
     merged_df = merged_df[['feat_id','service','assembly','category','type_ref','fitting_size_1','fitting_size_2','fitting_class_1','fitting_class_2']]
-    
-    #merged_df['fitting_size_a'] = merged_df[['fitting_size_1', 'fitting_size_2']].max(axis=1)
-    #merged_df['fitting_size_b'] = merged_df[['fitting_size_1', 'fitting_size_2']].min(axis=1)
-    
-    #merged_df['fitting_size_b'] = merged_df['fitting_size_b'].where(merged_df[['fitting_size_1', 'fitting_size_2']].notna().all(axis=1))
-    
-    #merged_df['fitting_class_a'] = merged_df[['fitting_class_1', 'fitting_class_2']].max(axis=1)
-    #merged_df['fitting_class_b'] = merged_df[['fitting_class_1', 'fitting_class_2']].min(axis=1)
-    
-    #merged_df['fitting_class_b'] = merged_df['fitting_class_b'].where(merged_df[['fitting_class_1', 'fitting_class_1']].notna().all(axis=1))
-    
-    #merged_df['fitting_class_a'] = merged_df['fitting_class_1']
-    #merged_df['fitting_class_b'] = merged_df['fitting_class_2']
-    
-    #merged_df = merged_df[['feat_id','service','assembly','category','type_ref','fitting_size_a','fitting_size_b','fitting_class_a','fitting_class_b']]
     
     merged_df['item_code'] = merged_df.apply(item_code, axis=1)
     
