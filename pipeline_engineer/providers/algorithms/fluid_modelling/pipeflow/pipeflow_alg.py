@@ -30,6 +30,8 @@ __copyright__ = '(C) 2025 by Pipeline Engineer'
 
 __revision__ = '$Format:%H$'
 
+import os
+
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.core import (
     QgsProcessing,
@@ -77,8 +79,20 @@ class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
     QUIT_ON_INCONSISTENCY = 'QUIT_ON_INCONSISTENCY'
     USE_NUMBA = 'USE_NUMBA'
     LOAD_LAYERS = 'LOAD_LAYERS'
-
+    
     def initAlgorithm(self, config):
+
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
 
         self.addParameter(
             QgsProcessingParameterMultipleLayers(
@@ -92,8 +106,7 @@ class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.FLUID,
                 description='Select Fluid',
-                options=["hgas","lgas","hydrogen","methane","water",
-                         "biomethane_pure","biomethane_treated","air"],
+                options=fluids,
                 defaultValue=0  
             )
         )
@@ -239,8 +252,17 @@ class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
         load_layers = self.parameterAsBool(parameters, self.LOAD_LAYERS, context)
 
 
-        fluids=["hgas","lgas","hydrogen","methane","water",
-                    "biomethane_pure","biomethane_treated","air"]
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
 
         modes=['hydraulics', 'bidirectional', 'sequential']
 

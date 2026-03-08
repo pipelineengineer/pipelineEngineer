@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RunMultiplePipeflowsDialogBase</class>
+ <widget class="QDialog" name="RunMultiplePipeflowsDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>303</width>
+    <height>485</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Fluids</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="1" colspan="2">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Fluid Browser</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="dsbFluidPressure"/>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Selected Fluid Properties:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Select Fluid:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>Temperature (Kelvin):</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QDoubleSpinBox" name="dsbTempK"/>
+       </item>
+       <item row="5" column="0" colspan="2">
+        <widget class="QTableView" name="twFluidProperties"/>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QComboBox" name="cmbFluid"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Pressure (Bar):</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>Create Fluid</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0" colspan="2">
+        <widget class="QScrollArea" name="scrollArea">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>259</width>
+            <height>421</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="1" column="1">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Fluid Type:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="2">
+            <widget class="QCheckBox" name="cbIsGas">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_85">
+             <property name="text">
+              <string>Fluid Name:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QDoubleSpinBox" name="dsbCompresibility"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QDoubleSpinBox" name="dsbHeatCap"/>
+           </item>
+           <item row="13" column="1" colspan="2">
+            <widget class="QPushButton" name="pbCreateFluid">
+             <property name="text">
+              <string>Create Fluid</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="1" colspan="2">
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>2</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="leFluidType"/>
+           </item>
+           <item row="8" column="1">
+            <widget class="QLabel" name="label_88">
+             <property name="text">
+              <string>Is Gas:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QDoubleSpinBox" name="dsbDensity"/>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Compresibility:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="label_86">
+             <property name="text">
+              <string>Density:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Heat Capacity:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Molar Mass:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QDoubleSpinBox" name="dsbMolarMass"/>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLabel" name="label_87">
+             <property name="text">
+              <string>Viscosity:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="14" column="1" colspan="2">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Select Fluid to Remove:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="15" column="1" colspan="2">
+            <widget class="QComboBox" name="cmbUserFluids"/>
+           </item>
+           <item row="6" column="2">
+            <widget class="QDoubleSpinBox" name="dsbViscosity"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLineEdit" name="leFluidName"/>
+           </item>
+           <item row="16" column="1" colspan="2">
+            <widget class="QPushButton" name="pbRemoveFluid">
+             <property name="text">
+              <string>Remove Fluid</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

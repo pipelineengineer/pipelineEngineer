@@ -94,6 +94,34 @@ class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
     LOAD_LAYERS = 'LOAD_LAYERS'
 
     def initAlgorithm(self, config):
+        
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
+
+        liquids_df = user_fluids_df[user_fluids_df['is_gas']==False]
+        gas_df = user_fluids_df[user_fluids_df['is_gas']==True]
+        
+
+        user_liquid_list = liquids_df['name'].tolist()
+        user_gas_list = gas_df['name'].tolist()
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+
+        liquids=["water"]
+        
+        liquids.extend(user_liquid_list)
+
+        gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
+        gases.extend(user_gas_list)
 
         self.addParameter(
             QgsProcessingParameterMultipleLayers(
@@ -107,8 +135,7 @@ class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.PIPEFLOW_FLUID,
                 description='Select Fluid',
-                options=["hgas","lgas","hydrogen","methane","water",
-                         "biomethane_pure","biomethane_treated","air"],
+                options=fluids,
                 defaultValue=4  
             )
         )
@@ -117,7 +144,7 @@ class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.LIQUID,
                 description='Select Liquid Phase',
-                options=["water"],
+                options=liquids,
                 defaultValue=0  
             )
         )
@@ -126,8 +153,7 @@ class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.GAS,
                 description='Select Gas Phase',
-                options=["hgas","lgas","hydrogen","methane",
-                         "biomethane_pure","biomethane_treated","air"],
+                options=gases,
                 defaultValue=3 
             )
         )
@@ -309,12 +335,30 @@ class runBeggsBrillPipeFlowAlgorithm(QgsProcessingAlgorithm):
         load_layers = self.parameterAsBool(parameters, self.LOAD_LAYERS, context)
 
 
-        fluids=["hgas","lgas","hydrogen","methane","water","biomethane_pure","biomethane_treated","air"]
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        liquids_df = user_fluids_df[user_fluids_df['is_gas']==False]
+        gas_df = user_fluids_df[user_fluids_df['is_gas']==True]
+        
+        user_liquid_list = liquids_df['name'].tolist()
+        user_gas_list = gas_df['name'].tolist()
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
 
         liquids=["water"]
+        
+        liquids.extend(user_liquid_list)
 
         gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
-
+        gases.extend(user_gas_list)
+        
         modes=['hydraulics', 'bidirectional', 'sequential']
 
         load_network_skeleton = self.parameterAsBool(parameters, self.RETURN_NETWORK, context)

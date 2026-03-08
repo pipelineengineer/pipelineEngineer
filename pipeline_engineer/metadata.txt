@@ -3,17 +3,17 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Pandapipes For QGIS
+name=Pipeline Engineer
 qgisMinimumVersion=3.0
-description=A pipe network modelling tool that can abstract models from GIS layers.
+description=A pipe network modelling and BOM generation tool for single-phase and two-phase compressible and incompressible flow.
 version=0.1
 author=Thomas Raj
 email=lemungineer@gmail.com
 
-about=A pipe network modelling tool that can abstract models from GIS layers.
+about=A pipe network modelling and BOM generation tool for single-phase and two-phase compressible and incompressible flow.
 
 tracker=https://github.com/pipelineengineer/pandaPipesForQGIS/issues
-repository=https://github.com/pipelineengineer/pandaPipesForQGIS
+repository=https://github.com/pipelineengineer/pipelineEngineer
 # End of mandatory metadata
 
 # Recommended items:
@@ -23,7 +23,7 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python,pipeline,pipe_network,network_modelling,single_phase_flow,two_phase_flow,compressible_flow,incompressible_flow,bom_generation
 
 homepage=https://pipelineengineer.github.io/
 category=Plugins

@@ -8,13 +8,15 @@ from .correct_directionality import *
 def homogenous_model_pf(layers,pipeflow_fluid,args,
                              liquid_phase,gas_phase,
                              gas_frac,surf_tens,
-                             gas_compressibility,molar_mass,
                              fluid_pres,fluid_temp,
                              load_network_skeleton,
                              chainage,dem_layer,feedback):
     
     liquid_density = get_fluid_parameter(parameter='density',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
     liquid_viscosity = get_fluid_parameter(parameter='viscosity',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
+    
+    gas_compressibility = get_fluid_parameter(parameter='compressibility',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
+    molar_mass = get_fluid_parameter(parameter='molar_mass',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
     
     pipeflow_layers = run_pipeflow(layers=layers,fluid=pipeflow_fluid,args=args,load_layers=False)
     

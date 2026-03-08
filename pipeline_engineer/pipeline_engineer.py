@@ -31,6 +31,7 @@ from .resources import *
 # Import the code for the dialog
 from .ui.network_component_creator.network_component_dialog import ComponentDialog
 from .ui.mto_builder.material_takeoff_builder_dockwidget import MaterialTakeOffBuilderDockWidget
+from .ui.fluids_browser.fluids_dialog import FluidsDialog
 
 from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
 from .providers.network_cleanup_provider import NetworkCleanupProvider
@@ -181,6 +182,7 @@ class PipelineEngineer:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         pp_icon_path = os.path.join(script_dir,'icons','pandapipes.png')
         mto_icon_path = os.path.join(script_dir,'icons','definetely_an_original_icon.png')
+        fluids_icon_path = os.path.join(script_dir,'icons','fluids.png')
 
         self.add_action(
             pp_icon_path,
@@ -192,6 +194,12 @@ class PipelineEngineer:
             mto_icon_path,
             text=self.tr(u'MTO Builder'),
             callback=self.run_mto,
+            parent=self.iface.mainWindow())
+        
+        self.add_action(
+            fluids_icon_path,
+            text=self.tr(u'Fluids Browser'),
+            callback=self.run_fluids,
             parent=self.iface.mainWindow())
 
         # will be set False in run()
@@ -265,3 +273,22 @@ class PipelineEngineer:
             # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
+
+    def run_fluids(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.dlg = FluidsDialog()
+
+        # show the dialog
+        self.dlg.show()
+        # Run the dialog event loop
+        result = self.dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass

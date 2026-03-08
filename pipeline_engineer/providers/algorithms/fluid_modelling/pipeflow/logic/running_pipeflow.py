@@ -215,6 +215,28 @@ def run_pipeflow(layers,
                  args,
                  load_layers):
     
+    default_fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+    
+    if fluid not in default_fluids:
+        
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        
+        fluid = pandapipes.create_constant_fluid(
+                                            name=fluid,
+                                            fluid_type = user_fluids_df.loc[user_fluids_df['name'] == fluid, "fluid_type"].iloc[0],
+                                            compressibility=user_fluids_df.loc[user_fluids_df['name'] == fluid, "compressibility"].iloc[0],
+                                            density=user_fluids_df.loc[user_fluids_df['name'] == fluid, "density"].iloc[0],
+                                            heat_capacity=user_fluids_df.loc[user_fluids_df['name'] == fluid, "heat_capacity"].iloc[0],
+                                            molar_mass=user_fluids_df.loc[user_fluids_df['name'] == fluid, "molar_mass"].iloc[0],
+                                            viscosity=user_fluids_df.loc[user_fluids_df['name'] == fluid, "viscosity"].iloc[0],
+                                            is_gas=user_fluids_df.loc[user_fluids_df['name'] == fluid, "is_gas"].iloc[0]
+                                        )
+    
+    
     net = on_create_network_clicked(components=layers,selected_fluid=fluid)
 
     print(net)

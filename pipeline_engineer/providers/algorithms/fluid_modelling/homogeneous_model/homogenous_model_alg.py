@@ -72,8 +72,6 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     GAS = 'GAS'
     GAS_FRACTION = 'GAS_FRACTION'
     SURF_TENS = 'SURF_TENS'
-    GAS_MOLAR_MASS = 'GAS_MOLAR_MASS'
-    GAS_COMP = 'GAS_COMP'
     AMBIENT_TEMP = 'AMBIENT_TEMP'
     FLUID_PRES = 'FLUID_PRES'
     RETURN_NETWORK = 'RETURN_NETWORK'
@@ -105,12 +103,39 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
+
+        liquids_df = user_fluids_df[user_fluids_df['is_gas']==False]
+        gas_df = user_fluids_df[user_fluids_df['is_gas']==True]
+        
+
+        user_liquid_list = liquids_df['name'].tolist()
+        user_gas_list = gas_df['name'].tolist()
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+
+        liquids=["water"]
+        
+        liquids.extend(user_liquid_list)
+
+        gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
+        gases.extend(user_gas_list)
+
         self.addParameter(
             QgsProcessingParameterEnum(
                 name=self.PIPEFLOW_FLUID,
                 description='Select Fluid',
-                options=["hgas","lgas","hydrogen","methane","water",
-                         "biomethane_pure","biomethane_treated","air"],
+                options=fluids,
                 defaultValue=4  
             )
         )
@@ -119,7 +144,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.LIQUID,
                 description='Select Liquid Phase',
-                options=["water"],
+                options=liquids,
                 defaultValue=0  
             )
         )
@@ -128,8 +153,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.GAS,
                 description='Select Gas Phase',
-                options=["hgas","lgas","hydrogen","methane",
-                         "biomethane_pure","biomethane_treated","air"],
+                options=gases,
                 defaultValue=3 
             )
         )
@@ -144,18 +168,6 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             self.SURF_TENS, 'Surface Tension',
             type=QgsProcessingParameterNumber.Double,
             minValue=0, maxValue=1, defaultValue=0.072
-        ))
-
-        self.addParameter(QgsProcessingParameterNumber(
-            self.GAS_MOLAR_MASS, 'Gas Molar Mass (kg/mol)',
-            type=QgsProcessingParameterNumber.Double,
-            minValue=0, maxValue=10000, defaultValue=16.04
-        ))
-        
-        self.addParameter(QgsProcessingParameterNumber(
-            self.GAS_COMP, 'Gas Compressibility',
-            type=QgsProcessingParameterNumber.Double,
-            minValue=0, maxValue=1, defaultValue=0.78
         ))
 
         self.addParameter(QgsProcessingParameterNumber(
@@ -329,6 +341,27 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
         gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
 
+        fluids = ["hgas","lgas","hydrogen","methane","water",
+                     "biomethane_pure","biomethane_treated","air"]
+
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
+
+        user_fluids_df = pd.read_csv(user_fluids_path)
+        liquids_df = user_fluids_df[user_fluids_df['is_gas']==False]
+        gas_df = user_fluids_df[user_fluids_df['is_gas']==True]
+        
+        user_liquid_list = liquids_df['name'].tolist()
+        user_gas_list = gas_df['name'].tolist()
+        
+        user_fluids_list = user_fluids_df['name'].tolist()
+        
+        fluids.extend(user_fluids_list)
+        
+        liquids.extend(user_liquid_list)
+
+        gases.extend(user_gas_list)
+
         modes=['hydraulics', 'bidirectional', 'sequential']
 
         load_network_skeleton = self.parameterAsBool(parameters, self.RETURN_NETWORK, context)
@@ -352,9 +385,6 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         chainage =  self.parameterAsDouble(parameters, self.CHAINAGE, context)
         dem_layer = self.parameterAsRasterLayer(parameters, self.DEM, context) 
 
-        molar_mass = self.parameterAsDouble(parameters, self.GAS_MOLAR_MASS, context)
-        gas_compressibility = self.parameterAsDouble(parameters, self.GAS_COMP, context)
-
         settings = {'max_iter_hyd': max_iter_hyd, 'max_iter_therm': max_iter_therm, 
             'tol_p': tol_p, 'tol_m': tol_m, 'tol_T': tol_T, 'tol_res': tol_res, 
             'ambient_temperature': ambient_temp, 
@@ -377,12 +407,11 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                                                 args=settings,
                                                 liquid_phase=liquid_phase,gas_phase=gas_phase,
                                                 gas_frac=gas_fraction,surf_tens=surf_tens,
-                                                gas_compressibility=gas_compressibility,molar_mass=molar_mass,
                                                 fluid_pres=fluid_pres,fluid_temp=ambient_temp,
                                                 load_network_skeleton=load_network_skeleton,
                                                 chainage=chainage,dem_layer=dem_layer,
                                                 feedback=feedback
-                                                )
+                                            )
         
         processing.run("native:package", 
                     {'LAYERS':result_layers,
