@@ -29,11 +29,24 @@ from qgis.core import QgsProcessingAlgorithm, QgsApplication
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
-from .ui.network_component_creator.network_component_dialog import ComponentDialog
-from .ui.mto_builder.material_takeoff_builder_dockwidget import MaterialTakeOffBuilderDockWidget
-from .ui.fluids_browser.fluids_dialog import FluidsDialog
 
-from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
+try:
+    from .ui.network_component_creator.network_component_dialog import ComponentDialog
+    from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
+    from .ui.fluids_browser.fluids_dialog import FluidsDialog
+    
+    fluids_avail = True
+except:
+    fluids_avail = False
+    pass
+
+try:
+    from .ui.mto_builder.material_takeoff_builder_dockwidget import MaterialTakeOffBuilderDockWidget
+    mto_avail = True
+except:
+    mto_avail = False
+    pass
+    
 from .providers.network_cleanup_provider import NetworkCleanupProvider
 import os.path
 
@@ -50,9 +63,13 @@ class PipelineEngineer:
         :type iface: QgsInterface
         """
         # Adding Provider
-        self.provider = PandaPipesForQGISProvider()
+        try:
+            self.provider = PandaPipesForQGISProvider()
+        except:
+            pass
+            
         self.net_provider = NetworkCleanupProvider()
-        QgsApplication.processingRegistry().addProvider(self.net_provider)
+        
         # Save reference to the QGIS interface
         self.iface = iface
         # initialize plugin directory
@@ -172,9 +189,12 @@ class PipelineEngineer:
 
     def initProcessing(self):
         """Init Processing provider for QGIS >= 3.8."""
-        self.provider = PandaPipesForQGISProvider()
-        QgsApplication.processingRegistry().addProvider(self.provider)
-
+        if fluids_avail:
+            self.provider = PandaPipesForQGISProvider()
+            QgsApplication.processingRegistry().addProvider(self.provider)
+            
+        QgsApplication.processingRegistry().addProvider(self.net_provider)
+        
     def initGui(self):
         self.initProcessing()
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
@@ -184,24 +204,26 @@ class PipelineEngineer:
         mto_icon_path = os.path.join(script_dir,'icons','definetely_an_original_icon.png')
         fluids_icon_path = os.path.join(script_dir,'icons','fluids.png')
 
-        self.add_action(
-            pp_icon_path,
-            text=self.tr(u'Create Network Component'),
-            callback=self.run_component,
-            parent=self.iface.mainWindow())
+        if fluids_avail:
+            self.add_action(
+                pp_icon_path,
+                text=self.tr(u'Create Network Component'),
+                callback=self.run_component,
+                parent=self.iface.mainWindow())
+                
+            self.add_action(
+                fluids_icon_path,
+                text=self.tr(u'Fluids Browser'),
+                callback=self.run_fluids,
+                parent=self.iface.mainWindow())
 
-        self.add_action(
+        if mto_avail:
+            self.add_action(
             mto_icon_path,
             text=self.tr(u'MTO Builder'),
             callback=self.run_mto,
             parent=self.iface.mainWindow())
         
-        self.add_action(
-            fluids_icon_path,
-            text=self.tr(u'Fluids Browser'),
-            callback=self.run_fluids,
-            parent=self.iface.mainWindow())
-
         # will be set False in run()
         self.first_start = True
 
@@ -223,7 +245,12 @@ class PipelineEngineer:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        QgsApplication.processingRegistry().removeProvider(self.provider)
+        
+        try:
+            QgsApplication.processingRegistry().removeProvider(self.provider)
+        except:
+            pass
+        
         QgsApplication.processingRegistry().removeProvider(self.net_provider)
         for action in self.actions:
             self.iface.removePluginMenu(

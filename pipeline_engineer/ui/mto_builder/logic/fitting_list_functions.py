@@ -75,8 +75,16 @@ def set_fit_class(row,fitting):
             'branch_class', 'branch_1_class', 'branch_2_class',
             'branch_3_class', 'branch_4_class'
         ]
-        existing_cols = [col for col in possible_cols if col in row]
-        values = [row[col] for col in existing_cols]
+
+        values = [
+                    row[col] for col in possible_cols
+                    if (
+                        col in row
+                        and pd.notna(row[col])
+                        and str(row[col]).strip().upper() != "NULL"
+                    )
+                ]
+
         fit_class = Counter(values).most_common(1)[0][0] if values else None
         
     elif row[f'class_{fitting}'] == 'max_class':

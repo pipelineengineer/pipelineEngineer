@@ -3,7 +3,6 @@ import os
 from qgis.PyQt import QtGui, QtWidgets, uic
 from qgis.PyQt.QtCore import pyqtSignal
 
-import pandas as pd
 import numpy as np
 
 from qgis.core import (QgsVectorLayer,QgsField,QgsFields,QgsFeature,QgsGeometry,
@@ -52,12 +51,6 @@ def field_to_list(layer,field): #converts a field in a layer into a list
 def load_layer(layer,layer_name): #loads layer by set name to session
     layer.setName(layer_name)
     QgsProject.instance().addMapLayer(layer)
-
-def layer_to_df(layer):
-        cols = [f.name() for f in layer.fields()]
-        data = ([f[col] for col in cols] for f in layer.getFeatures())
-        df = pd.DataFrame.from_records(data=data, columns = cols)
-        return df
 
 def xyz_data(layer,id_field,dem,chainage):
     distance = chainage * 0.000009

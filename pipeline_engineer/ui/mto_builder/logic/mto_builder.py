@@ -30,8 +30,16 @@ def load_df_as_layer(dataframe,df_name):
     dataframe_file = os.path.join(new_folder_path, f'{df_name}.csv')
     dataframe.to_csv(dataframe_file,index=False)
 
-    uri = f"file:///{dataframe_file}?delimiter=,&detectTypes=yes&geomType=none"
+    column_list = dataframe.columns.tolist()
 
+    if 'xcoord' in column_list and 'ycoord' in column_list:
+        crs = QgsProject.instance().crs().authid()
+        
+        uri = f"file:///{dataframe_file}?delimiter=,&xField=xcoord&yField=ycoord&geomType=point&crs={crs}&detectTypes=yes"
+        
+    else:
+        uri = f"file:///{dataframe_file}?delimiter=,&detectTypes=yes&geomType=none"
+        
     results_layer = QgsVectorLayer(uri, f'{df_name}','delimitedtext')
     
     return results_layer
@@ -74,7 +82,7 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     
     merged_df = merged_df[merged_df['filter'] != 'FILTER']
     
-    merged_df = merged_df[['feat_id','service','assembly','category','type_ref','fitting_size_1','fitting_size_2','fitting_class_1','fitting_class_2']]
+    merged_df = merged_df[['feat_id','service','assembly','category','type_ref','fitting_size_1','fitting_size_2','fitting_class_1','fitting_class_2','xcoord','ycoord']]
     
     merged_df['item_code'] = merged_df.apply(item_code, axis=1)
     
