@@ -36,7 +36,7 @@ def pipe_summariser(layer,corridor_id_field,size_formula,class_formula,length_fo
     line_class = processing.run("native:fieldcalculator", 
                                     {'INPUT':line_size,
                                      'FIELD_NAME':f'{service_lower}_class',
-                                     'FIELD_TYPE':0,
+                                     'FIELD_TYPE':2,
                                      'FIELD_LENGTH':0,
                                      'FIELD_PRECISION':0,
                                      'FORMULA':class_formula,

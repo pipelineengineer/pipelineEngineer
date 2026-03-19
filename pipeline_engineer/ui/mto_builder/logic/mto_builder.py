@@ -66,7 +66,12 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     
     assembly_list_df = pd.read_excel(assembly_list_path,sheet_name=assy_sheet)
     
-    pipeline_feature_df = layer_to_df(pipeline_feature_layer)
+    geom_added = processing.run("native:exportaddgeometrycolumns", 
+                                            {'INPUT':pipeline_feature_layer,
+                                             'METHOD':0,
+                                             'OUTPUT':'memory:'})['OUTPUT']
+    
+    pipeline_feature_df = layer_to_df(geom_added)
     
     #print(pipeline_feature_df.head())
     #print(assembly_list_df.head())

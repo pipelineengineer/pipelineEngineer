@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 
+import re
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 pipe_sizes_path = os.path.join(BASE_DIR, 'pipe_data', 'specifications.xlsx')
@@ -22,16 +24,28 @@ def set_type_ref(row):
     return row['item']
 
 def set_fit_size(row,fitting):
+    
     direct_sizes = [
                     'corridor_size', 'header_1_size', 'header_2_size',
                     'branch_size', 'branch_1_size', 'branch_2_size',
                     'branch_3_size', 'branch_4_size'
                      ]
     
+    materials = [
+                    'corridor_material', 'header_1_material', 'header_2_material',
+                    'branch_material', 'branch_1_material', 'branch_2_material',
+                    'branch_3_material', 'branch_4_material'
+                     ]
+    
+    
     if row[f'size_{fitting}'] in direct_sizes:
+        
         size = row[row[f'size_{fitting}']]
         
+        fitting_material_col = re.sub('size', 'material', row[f'size_{fitting}'])
+        
     elif row[f'size_{fitting}'] == 'max_size':
+        
         possible_cols = [
                             'corridor_size', 'header_1_size', 'header_2_size',
                             'branch_size', 'branch_1_size', 'branch_2_size',
@@ -40,21 +54,64 @@ def set_fit_size(row,fitting):
 
         existing_cols = [col for col in possible_cols if col in row]
         
+        fitting_material_col = re.sub('size', 'material', row[f'size_{fitting}'])
+        
         size = max(existing_cols)
+        
+        largest_size = row[row == size].index[0]
+        
+        material_cols = [col for col in materials if col in row]
+        
+        fitting_material_col = Counter(material_cols).most_common(1)[0][0] 
+        
 
     elif row[f'size_{fitting}'] == 'max_header_size':
         size = max(row['header_1_size'],row['header_2_size'],)
+        
+        header_materials = ['header_1_material', 'header_2_material']
+        
+        material_cols = [col for col in header_materials if col in row]
+        
+        fitting_material_col = Counter(material_cols).most_common(1)[0][0] 
     
     else:
         size = row[f'size_{fitting}']
+        
     
     if isinstance(size, (int, float)):
         fit_size_ceiled = max(size, row[f'size_{fitting}_ceil'])
         size = min(size, row[f'size_{fitting}_floor'])
     
-    if size != row[f'size_{fitting}'] and row[f'material_{fitting}'] != 'PE100' and not pd.isna(row[f'material_{fitting}']):
+    
+    try:
+        fitting_material = row[fitting_material_col]
+    except:
+        fitting_material = row[f'material_{fitting}']
         
-        size = pipe_sizes_df.loc[(pipe_sizes_df['pe_size'] == size)&(pipe_sizes_df['material_a'] == 'hdpe'), 'steel_size'].iloc[0]
+    item_material = row[f'material_{fitting}']
+    
+    try:
+        fitting_material_type = pipe_materials_df.loc[pipe_materials_df['material'] == fitting_material, 'material_type'].iloc[0]
+    except:
+        fitting_material_type = False
+    
+    try:
+        item_material_type = pipe_materials_df.loc[pipe_materials_df['material'] == item_material, 'material_type'].iloc[0]
+    except:
+        item_material_type = False
+        
+    
+    if item_material_type != fitting_material_type and item_material_type != False:
+        size_b = pipe_sizes_df.loc[
+                                    (
+                                        (pipe_sizes_df['material_a'] == fitting_material_type) &
+                                        (pipe_sizes_df['material_b'] == item_material_type) &
+                                        (pipe_sizes_df['size_a'] == size)
+                                    ),
+                                    'size_b'
+                                ].iloc[0]
+        
+        size = size_b
 
     return size
 

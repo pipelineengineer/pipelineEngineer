@@ -40,14 +40,17 @@ except:
     fluids_avail = False
     pass
 
+from .ui.mto_builder.material_takeoff_builder_dockwidget_v2 import MaterialTakeOffBuilderDockWidget
+
 try:
-    from .ui.mto_builder.material_takeoff_builder_dockwidget import MaterialTakeOffBuilderDockWidget
+    from .ui.mto_builder.material_takeoff_builder_dockwidget_v2 import MaterialTakeOffBuilderDockWidget
     mto_avail = True
 except:
     mto_avail = False
     pass
     
 from .providers.network_cleanup_provider import NetworkCleanupProvider
+from .providers.material_takeoff_provider import materialTakeOffProvider
 import os.path
 
 
@@ -69,6 +72,7 @@ class PipelineEngineer:
             pass
             
         self.net_provider = NetworkCleanupProvider()
+        self.mto_provider = materialTakeOffProvider()
         
         # Save reference to the QGIS interface
         self.iface = iface
@@ -194,6 +198,7 @@ class PipelineEngineer:
             QgsApplication.processingRegistry().addProvider(self.provider)
             
         QgsApplication.processingRegistry().addProvider(self.net_provider)
+        QgsApplication.processingRegistry().addProvider(self.mto_provider)
         
     def initGui(self):
         self.initProcessing()
@@ -252,6 +257,7 @@ class PipelineEngineer:
             pass
         
         QgsApplication.processingRegistry().removeProvider(self.net_provider)
+        QgsApplication.processingRegistry().removeProvider(self.mto_provider)
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&Pipeline Engineer'),

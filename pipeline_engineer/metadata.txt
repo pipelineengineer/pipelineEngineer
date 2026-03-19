@@ -12,7 +12,7 @@ email=lemungineer@gmail.com
 
 about=A pipe network modelling and BOM generation tool for single-phase and two-phase compressible and incompressible flow.
 
-tracker=https://github.com/pipelineengineer/pandaPipesForQGIS/issues
+tracker=https://github.com/pipelineengineer/pipelineEngineer/issues
 repository=https://github.com/pipelineengineer/pipelineEngineer
 # End of mandatory metadata
 
