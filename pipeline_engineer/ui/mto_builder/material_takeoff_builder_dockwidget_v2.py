@@ -265,7 +265,7 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         fields_to_keep.append('corridor')
         
         retained_again = processing.run("native:retainfields", 
-                                        {'INPUT':feature_layer,
+                                        {'INPUT':corridor_named,
                                         'FIELDS':fields_to_keep,
                                         'OUTPUT':'memory:'})['OUTPUT']
         
@@ -368,7 +368,6 @@ class MaterialTakeOffBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def on_load_fittings_summary_clicked(self):
         assembly_list_path = self.fwAssemblyList.filePath()
-        
         
         if assembly_list_path:
             assy_sheet = self.leSheetName.text()

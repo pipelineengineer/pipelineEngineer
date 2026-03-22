@@ -52,15 +52,15 @@ def homogenous_method(flow_rate, gas_frac,
         inlet_pres = pres
 
     dictionary = {
-        "re_d": [re],
-        "rho_m": [mixture_density],
-        "rho_g": [gas_density],
-        "mol_mass_g": [molar_mass],
-        "z_g": [gas_compressibility],
-        "phi": [phi],
-        "v_m": [v_m],
-        "p_from_bar": [inlet_pres],
-        "p_to_bar": [pres]
+        "re_d": re,
+        "rho_m": mixture_density,
+        "rho_g": gas_density,
+        "mol_mass_g": molar_mass,
+        "z_g": gas_compressibility,
+        "phi": phi,
+        "v_m": v_m,
+        "p_from_bar": inlet_pres,
+        "p_to_bar": pres
     }
 
     dataframe = pd.DataFrame(dictionary)

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 
-from .fitting_list_functions import *
+from .fitting_list_functions_v2 import *
 
 def layer_to_df(layer):
         cols = [f.name() for f in layer.fields()]
@@ -68,7 +68,7 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     
     geom_added = processing.run("native:exportaddgeometrycolumns", 
                                             {'INPUT':pipeline_feature_layer,
-                                             'METHOD':0,
+                                             'METHOD':1,
                                              'OUTPUT':'memory:'})['OUTPUT']
     
     pipeline_feature_df = layer_to_df(geom_added)
@@ -87,7 +87,7 @@ def generate_fittings_list(assembly_list_path,assy_sheet,pipeline_feature_layer)
     
     merged_df = merged_df[merged_df['filter'] != 'FILTER']
     
-    merged_df = merged_df[['feat_id','service','assembly','category','type_ref','fitting_size_1','fitting_size_2','fitting_class_1','fitting_class_2','xcoord','ycoord']]
+    merged_df = merged_df[['xcoord','ycoord','feat_id','service','assembly','category','type_ref','fitting_size_1','fitting_size_2','fitting_class_1','fitting_class_2']]
     
     merged_df['item_code'] = merged_df.apply(item_code, axis=1)
     
