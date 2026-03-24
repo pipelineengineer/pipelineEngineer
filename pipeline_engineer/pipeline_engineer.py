@@ -40,8 +40,6 @@ except:
     fluids_avail = False
     pass
 
-from .ui.mto_builder.material_takeoff_builder_dockwidget_v2 import MaterialTakeOffBuilderDockWidget
-
 try:
     from .ui.mto_builder.material_takeoff_builder_dockwidget_v2 import MaterialTakeOffBuilderDockWidget
     mto_avail = True
