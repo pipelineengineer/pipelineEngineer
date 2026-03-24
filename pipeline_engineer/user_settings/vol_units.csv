@@ -1,0 +1,9 @@
+unit,conversion_to_m3
+BBL,0.158987
+MBBL,158.987
+MSCF,28317
+MMSCF,28.317
+ML,1000
+kL,1
+L,0.001
+m^3,1
