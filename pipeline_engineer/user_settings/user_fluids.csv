@@ -1,2 +1,1 @@
 name,fluid_type,compressibility,density,heat_capacity,molar_mass,viscosity,is_gas
-gross_liquid_runnoff_slime,gas,1.0,1.0,1.0,16.04,2e-05,True

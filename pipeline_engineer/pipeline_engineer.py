@@ -72,6 +72,10 @@ class PipelineEngineer:
         self.net_provider = NetworkCleanupProvider()
         self.mto_provider = materialTakeOffProvider()
         
+        
+        self.fluid_dlg = FluidsDialog()
+        self.network_dlg = ComponentDialog()
+        
         # Save reference to the QGIS interface
         self.iface = iface
         # initialize plugin directory
@@ -270,40 +274,17 @@ class PipelineEngineer:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = ComponentDialog()
+            self.network_dlg = ComponentDialog()
 
         # show the dialog
-        self.dlg.show()
+        self.network_dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.network_dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
-
-    def run_mto(self):
-        """Run method that loads and starts the plugin"""
-
-        if not self.pluginIsActive:
-            self.pluginIsActive = True
-
-            #print "** STARTING MTOBuilder"
-
-            # dockwidget may not exist if:
-            #    first run of plugin
-            #    removed on close (see self.onClosePlugin method)
-            if self.dockwidget == None:
-                # Create the dockwidget (after translation) and keep reference
-                self.dockwidget = MaterialTakeOffBuilderDockWidget()
-
-            # connect to provide cleanup on closing of dockwidget
-            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
-
-            # show the dockwidget
-            # TODO: fix to allow choice of dock location
-            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
-            self.dockwidget.show()
 
     def run_fluids(self):
         """Run method that performs all the real work"""
@@ -312,12 +293,12 @@ class PipelineEngineer:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = FluidsDialog()
+            self.fluid_dlg = FluidsDialog()
 
         # show the dialog
-        self.dlg.show()
+        self.fluid_dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.fluid_dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
