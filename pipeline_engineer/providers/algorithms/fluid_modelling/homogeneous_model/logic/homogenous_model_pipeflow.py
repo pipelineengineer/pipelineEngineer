@@ -4,13 +4,15 @@ from ...general_logic.function_helpers import *
 from ...pipeflow.logic.running_pipeflow import *
 from ...fluids.logic.fluids import *
 from .correct_directionality import *
+from .pressure_through_a_network_downstream_hm import *
 
 def homogenous_model_pf(layers,pipeflow_fluid,args,
                              liquid_phase,gas_phase,
                              gas_frac,surf_tens,
                              fluid_pres,fluid_temp,
                              load_network_skeleton,
-                             chainage,dem_layer,feedback):
+                             chainage,dem_layer,is_downstream,
+                             feedback):
     
     liquid_density = get_fluid_parameter(parameter='density',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
     liquid_viscosity = get_fluid_parameter(parameter='viscosity',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
@@ -20,7 +22,7 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     
     pipeflow_layers = run_pipeflow(layers=layers,fluid=pipeflow_fluid,args=args,load_layers=False)
     
-    beggs_brill_results = []
+    homogenous_model_results = []
     
     for layer in pipeflow_layers:
         layer_name = layer.name().lower()
@@ -32,12 +34,12 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
             junction_layer = layer
         elif 'grid layer' in layer_name:
             grid_layer = layer
-            beggs_brill_results.append(layer)
+            homogenous_model_results.append(layer)
         elif 'pump layer' in layer_name:
             pump_layer = layer
-            beggs_brill_results.append(layer)
+            homogenous_model_results.append(layer)
         else:
-            beggs_brill_results.append(layer)
+            homogenous_model_results.append(layer)
     
     feedback.pushInfo("Collecting line elevation profiles...")
     network_xyz, network_skeleton  = create_network_xyz_layer(pipe_results_layer=pipe_results_layer,
@@ -48,8 +50,8 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     network_xyz.setName('Network XYZ Data')
     
     if load_network_skeleton:
-        beggs_brill_results.append(network_xyz)
-        beggs_brill_results.append(network_skeleton)
+        homogenous_model_results.append(network_xyz)
+        homogenous_model_results.append(network_skeleton)
     
     line_data_df = layer_to_df(network_skeleton)
     line_xyz_df = layer_to_df(network_xyz)
@@ -60,14 +62,16 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     except:
         pump_df = pd.DataFrame()
     
-    
-    print(line_data_df.head())
-    print(line_xyz_df.head())
-    print(grids_df.head())
-    
     feedback.pushInfo("Calculating line pressures...")
-    line_df, junction_df,master_results_df = pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
-                            liquid_density, liquid_viscosity,gas_frac,gas_compressibility,molar_mass,surf_tens)
+    
+    if is_downstream:
+        
+        line_df, junction_df,master_results_df = pressures_through_a_network_downstream(line_data_df, line_xyz_df,grids_df,pump_df,
+                                liquid_density, liquid_viscosity,gas_frac,gas_compressibility,molar_mass,fluid_temp,surf_tens)
+        
+    else:
+        line_df, junction_df,master_results_df = pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
+                                liquid_density, liquid_viscosity,gas_frac,gas_compressibility,molar_mass,fluid_temp,surf_tens)
 
     dataframes = [line_df, junction_df,master_results_df]
     file_names = ['junction_results','pipe_results']
@@ -76,7 +80,7 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     
     csv_files = dataframes_to_csv(dataframes,file_names)
     
-    beggs_brill_layers = []
+    homogenous_model_layers = []
     
     feedback.pushInfo("Saving results to layers...")
     for layer in csv_files:
@@ -112,7 +116,7 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
         
             # adding to session
             joined_layer_pipe.setName('Two-Phase Pipe Results Layer')
-            beggs_brill_layers.append(joined_layer_pipe)
+            homogenous_model_layers.append(joined_layer_pipe)
         
         elif layer_name == 'bb_junction_results':
             
@@ -149,7 +153,7 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
             # adding to session
             null_removed.setName('Two-Phase Junction Results Layer')
             
-            beggs_brill_layers.append(null_removed)
+            homogenous_model_layers.append(null_removed)
             
         else:
             layer.selectAll()
@@ -160,8 +164,8 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
             
             working_layer.setName('Two-Phase Pressure Drop By Section')
             
-            beggs_brill_layers.append(working_layer)
+            homogenous_model_layers.append(working_layer)
             
-    beggs_brill_results.extend(beggs_brill_layers)
+    homogenous_model_results.extend(homogenous_model_layers)
     
-    return beggs_brill_results
+    return homogenous_model_results

@@ -44,6 +44,7 @@ from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import runPipeFlowAlgorit
 #from .algorithms.fluid_modelling.beggs_brill.beggs_brill_alg import runBeggsBrillPipeFlowAlgorithm
 from .algorithms.fluid_modelling.fluids.fluid_algs import AddFluidValueToLayer
 from .algorithms.fluid_modelling.homogeneous_model.homogenous_model_alg import HomogenousTwoPhaseModelAlgorithm
+#from .algorithms.fluid_modelling.homogeneous_model_downstream.downstream_homogenous_model_alg import DownstreamHomogenousTwoPhaseModelAlgorithm
 from .algorithms.fluid_modelling.update_flow_rates.update_flow_rates_alg import updateFlowRatesAlgorithm
 #except:
 #    pass
@@ -71,6 +72,7 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         #self.addAlgorithm(runBeggsBrillPipeFlowAlgorithm())
         self.addAlgorithm(AddFluidValueToLayer())
         self.addAlgorithm(HomogenousTwoPhaseModelAlgorithm())
+        #self.addAlgorithm(DownstreamHomogenousTwoPhaseModelAlgorithm())
         self.addAlgorithm(updateFlowRatesAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())

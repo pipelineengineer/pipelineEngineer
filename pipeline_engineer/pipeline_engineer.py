@@ -30,9 +30,11 @@ from qgis.core import QgsProcessingAlgorithm, QgsApplication
 from .resources import *
 # Import the code for the dialog
 
+from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
+
 try:
     from .ui.network_component_creator.network_component_dialog import ComponentDialog
-    from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
+    
     from .ui.fluids_browser.fluids_dialog import FluidsDialog
     
     fluids_avail = True
@@ -73,8 +75,11 @@ class PipelineEngineer:
         self.mto_provider = materialTakeOffProvider()
         
         
-        self.fluid_dlg = FluidsDialog()
-        self.network_dlg = ComponentDialog()
+        try:
+            self.fluid_dlg = FluidsDialog()
+            self.network_dlg = ComponentDialog()
+        except:
+            pass
         
         # Save reference to the QGIS interface
         self.iface = iface

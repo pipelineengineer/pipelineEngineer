@@ -67,6 +67,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     CHECK_SELECTED = 'CHECK_SELECTED'
     OUTPUT = 'OUTPUT'
     LAYERS = 'LAYERS'
+    DOWNSTREAM = 'DOWNSTREAM'
     PIPEFLOW_FLUID = 'PIPEFLOW_FLUID'
     LIQUID = 'LIQUID'
     GAS = 'GAS'
@@ -102,6 +103,11 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                 layerType=QgsProcessing.TypeVector
             )
         )
+        
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.DOWNSTREAM, 'Pressure Boundary Upstream?',
+            defaultValue=False
+        ))
 
         fluids = ["hgas","lgas","hydrogen","methane","water",
                      "biomethane_pure","biomethane_treated","air"]
@@ -314,6 +320,8 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         if not layers:
             raise QgsProcessingException("No valid input layers selected.")
 
+        is_downstream = self.parameterAsBool(parameters, self.DOWNSTREAM, context)
+
         # Extract all parameters
         fluid_index = self.parameterAsInt(parameters, self.PIPEFLOW_FLUID, context)
         mode_index = self.parameterAsInt(parameters, self.CALC_MODE, context)
@@ -410,6 +418,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                                                 fluid_pres=fluid_pres,fluid_temp=ambient_temp,
                                                 load_network_skeleton=load_network_skeleton,
                                                 chainage=chainage,dem_layer=dem_layer,
+                                                is_downstream=is_downstream,
                                                 feedback=feedback
                                             )
         

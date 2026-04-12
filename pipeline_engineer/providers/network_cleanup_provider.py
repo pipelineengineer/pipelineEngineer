@@ -39,6 +39,7 @@ from qgis.PyQt.QtGui import QIcon
 from .algorithms.network_cleanup.disjoint_check_algorithm import disjointCheckAlgorithm
 from .algorithms.network_cleanup.loop_check_algorithm import loopCheckingAlgorithm
 from .algorithms.network_cleanup.recursive_selection_algorithm import recursiveSelectionAlgorithm
+from .algorithms.network_cleanup.recursive_selection_downstream_algorithm import recursiveSelectionDownstreamAlgorithm
 from .algorithms.network_cleanup.merge_selected_features import mergeSelectedFeatureLayers
 
 class NetworkCleanupProvider(QgsProcessingProvider):
@@ -63,6 +64,7 @@ class NetworkCleanupProvider(QgsProcessingProvider):
         self.addAlgorithm(disjointCheckAlgorithm())
         self.addAlgorithm(loopCheckingAlgorithm())
         self.addAlgorithm(recursiveSelectionAlgorithm())
+        self.addAlgorithm(recursiveSelectionDownstreamAlgorithm())
         self.addAlgorithm(mergeSelectedFeatureLayers())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())

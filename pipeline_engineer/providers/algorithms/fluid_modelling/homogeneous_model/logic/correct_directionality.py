@@ -114,8 +114,6 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
     if selected_style:
         style_path = os.path.join(folder_path, selected_style)
 
-        print(style_path)
-
         dropped_fields_lines.loadNamedStyle(style_path)
         dropped_fields_lines.triggerRepaint()
 
@@ -134,12 +132,8 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
         chainage = chainage/111111
         divider = 111111
 
-    print(chainage)
-
     exp = f'CASE\r\nWHEN ($length / {divider}) < {chainage} THEN ($length/{divider})/3\r\nELSE {chainage}\r\nEND'
     
-    print(exp)
-
     points_along_lines = processing.run("native:pointsalonglines", 
                                         {'INPUT':dropped_fields_lines,
                                         'DISTANCE':QgsProperty.fromExpression(exp),

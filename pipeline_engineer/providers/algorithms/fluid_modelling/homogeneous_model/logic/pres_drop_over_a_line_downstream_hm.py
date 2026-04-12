@@ -6,10 +6,10 @@ from logic.main_hm import *
 #from logic.beggs_brill_formula import *
 from logic.dataframes_to_csv import *
 
-def pres_drop_over_line(line_data_df, line_xyz_df,
+def pres_drop_over_line_downstream(line_data_df, line_xyz_df,
                         liquid_density, liquid_viscosity,
-                        gas_compressibility,molar_mass,fluid_temp,gas_frac,
-                        surf_tens, outlet_pres):
+                        gas_compressibility,molar_mass,gas_frac,fluid_temp,
+                        surf_tens, inlet_pres):
     
     results_df = pd.DataFrame()
 
@@ -19,7 +19,7 @@ def pres_drop_over_line(line_data_df, line_xyz_df,
 
     vol_flow_rate = mass_flow_rate / liquid_density
 
-    pres = outlet_pres
+    pres = inlet_pres
 
     internal_diameter = line_data_row['diameter_m']
 
@@ -47,7 +47,7 @@ def pres_drop_over_line(line_data_df, line_xyz_df,
 
     line_mesh_df = line_mesh_df.iloc[:-1]
 
-    line_mesh_df = line_mesh_df.sort_values(by='chainage_m',ascending=False)
+    line_mesh_df = line_mesh_df.sort_values(by='chainage_m',ascending=True)
     
     for index, row in line_mesh_df.iterrows():
 
@@ -65,7 +65,7 @@ def pres_drop_over_line(line_data_df, line_xyz_df,
                        liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,
                        surf_tens=surf_tens, pres=pres, gas_compressibility=gas_compressibility,molar_mass=molar_mass,fluid_temp=fluid_temp,
                        internal_diameter=internal_diameter,line_roughness=line_roughness,
-                       chainage=length,elevation=elevation,downstream=False)
+                       chainage=length,elevation=elevation,downstream=True)
                        
         bb_df_entry['section_id'] = row['section_id']
 

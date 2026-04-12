@@ -16,7 +16,7 @@ sys.path.insert(0, parent_dir)  # Add it to sys.path
 
 from .function_helpers import *
 
-def recursive_selection(edges):
+def recursive_selection_downstream(edges):
 
     selected_count = edges.selectedFeatureCount()
 
@@ -49,7 +49,7 @@ def recursive_selection(edges):
         selected_lines_list = [f['numeric_id'] for f in selected_lines]
         selected_lines_string = ','.join(map(str,selected_lines_list))
         
-        exp = f' "numeric_id" IN ({selected_lines_string}) AND "vertex_pos" = 0'
+        exp = f' "numeric_id" IN ({selected_lines_string}) AND "vertex_pos" = -1'
         
         processing.run("qgis:selectbyexpression", {'INPUT':specific_vertices,'EXPRESSION':exp,'METHOD':0})
         
@@ -65,7 +65,7 @@ def recursive_selection(edges):
 
         processing.run("qgis:selectbyexpression", 
                                     {'INPUT':specific_vertices,
-                                     'EXPRESSION':f'"numeric_id" NOT IN ({selected_lines_string}) AND "vertex_pos" = -1',
+                                     'EXPRESSION':f'"numeric_id" NOT IN ({selected_lines_string}) AND "vertex_pos" = 0',
                                      'METHOD':3})
         
         # Creating list

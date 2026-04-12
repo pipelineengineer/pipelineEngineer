@@ -113,6 +113,7 @@ field_types = fields = [
     QgsField("pn_bar", QVariant.Double),
     QgsField("p_bar", QVariant.Double),
     QgsField("p_flow_bar", QVariant.Double),
+    QgsField("alpha_w_per_m2k", QVariant.Double),
     QgsField("plift_bar", QVariant.Double),
     QgsField("pressure_ratio", QVariant.Double),
     QgsField("qext_w", QVariant.Double),

@@ -44,9 +44,9 @@ from qgis.core import (
     QgsProcessingParameterVectorLayer
 )
 
-from .logic.recursive_selection import *
+from .logic.recursive_selection_downstream import recursive_selection_downstream
 
-class recursiveSelectionAlgorithm(QgsProcessingAlgorithm):
+class recursiveSelectionDownstreamAlgorithm(QgsProcessingAlgorithm):
 
     INPUT = 'INPUT'
     OUTPUT = 'OUTPUT'
@@ -69,17 +69,17 @@ class recursiveSelectionAlgorithm(QgsProcessingAlgorithm):
         #feedback.pushInfo(f"Using ID field: {id_field}")
 
         # Run the selection function
-        recursive_selection(edges=layer)
+        recursive_selection_downstream(edges=layer)
 
         # Return the original layer as output (or create a dummy output if needed)
         return {self.OUTPUT: layer.id()}
 
 
     def name(self):
-        return 'recursive_selection'
+        return 'recursive_selection_downstream'
 
     def displayName(self):
-        return self.tr('Recursive Selection')
+        return self.tr('Recursive Selection (Downstream)')
 
     def group(self):
         return self.tr(self.groupId())
@@ -89,12 +89,12 @@ class recursiveSelectionAlgorithm(QgsProcessingAlgorithm):
 
     def shortHelpString(self):
         return self.tr("""
-    This purpose of this algorithm is to determine which lines feed into the selected line.
+    This purpose of this algorithm is to determine which the selected line feeds into.
                        
-    This is accomplished by find which lines end where the selected line starts.
+    This is accomplished by find which lines starts where the selected line ends.
                        
-    This process is repeated until no more lines are no more lines feeding into the selected part of the network are found.
+    This process is repeated until no more lines are no new line ends of the network are found.
     """)
 
     def createInstance(self):
-        return recursiveSelectionAlgorithm()
+        return recursiveSelectionDownstreamAlgorithm()
