@@ -54,12 +54,6 @@ def pres_drop_over_line(line_data_df, line_xyz_df,
         length = row['section_length_m']
 
         elevation = row['section_elev_m']
-        
-        if elevation  < 0:
-            
-            elev_ratio = abs(elevation / length) * 1000
-            
-            gas_fraction = min(elev_ratio,0.5)
 
         bb_df_entry = homogenous_method(flow_rate=vol_flow_rate, gas_frac=gas_frac,
                        liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,
