@@ -1,17 +1,16 @@
 import os
-from .pressure_through_a_network_hm import *
+from .pressure_through_a_network import *
 from ...general_logic.function_helpers import *
 from ...pipeflow.logic.running_pipeflow import *
 from ...fluids.logic.fluids import *
 from .correct_directionality import *
-from .pressure_through_a_network_downstream_hm import *
 
-def homogenous_model_pf(layers,pipeflow_fluid,args,
+def two_phase_pipeflow(layers,pipeflow_fluid,args,
                              liquid_phase,gas_phase,
                              gas_frac,surf_tens,
                              fluid_pres,fluid_temp,
                              load_network_skeleton,
-                             chainage,dem_layer,is_downstream,
+                             chainage,dem_layer,flow_model,
                              feedback):
     
     liquid_density = get_fluid_parameter(parameter='density',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
@@ -19,6 +18,7 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     
     gas_compressibility = get_fluid_parameter(parameter='compressibility',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
     molar_mass = get_fluid_parameter(parameter='molar_mass',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
+    gas_viscosity = get_fluid_parameter(parameter='viscosity',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
     
     pipeflow_layers = run_pipeflow(layers=layers,fluid=pipeflow_fluid,args=args,load_layers=False)
     
@@ -64,14 +64,10 @@ def homogenous_model_pf(layers,pipeflow_fluid,args,
     
     feedback.pushInfo("Calculating line pressures...")
     
-    if is_downstream:
-        
-        line_df, junction_df,master_results_df = pressures_through_a_network_downstream(line_data_df, line_xyz_df,grids_df,pump_df,
-                                liquid_density, liquid_viscosity,gas_frac,gas_compressibility,molar_mass,fluid_temp,surf_tens)
-        
-    else:
-        line_df, junction_df,master_results_df = pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
-                                liquid_density, liquid_viscosity,gas_frac,gas_compressibility,molar_mass,fluid_temp,surf_tens)
+    line_df, junction_df,master_results_df = pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
+                        liquid_density, liquid_viscosity,
+                        gas_frac,gas_compressibility,molar_mass,gas_viscosity,fluid_temp,
+                        surf_tens,flow_model)
 
     dataframes = [line_df, junction_df,master_results_df]
     file_names = ['junction_results','pipe_results']

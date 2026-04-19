@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-from logic.pres_drop_over_a_line_hm import *
+from logic.pres_drop_over_a_line import *
 
 def pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
                             liquid_density, liquid_viscosity,
-                            gas_frac,gas_compressibility,molar_mass,fluid_temp,
-                            surf_tens):
+                            gas_frac,gas_compressibility,molar_mass,gas_viscosity,fluid_temp,
+                            surf_tens,flow_model):
 
     known_pressures_df = grids_df[['junction','p_bar']]
 
@@ -75,10 +75,11 @@ def pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
 
             pres_drop_df = pres_drop_over_line(
                 line_data_df=selected_line_df, line_xyz_df=selected_xyz_df,
-                liquid_density=liquid_density, liquid_viscosity=liquid_viscosity,
+                liquid_density=liquid_density, liquid_viscosity=liquid_viscosity,gas_viscosity=gas_viscosity,
                 gas_compressibility=gas_compressibility,molar_mass=molar_mass,fluid_temp=fluid_temp,
                 gas_frac=gas_frac,surf_tens=surf_tens,
-                outlet_pres=junction_pres
+                outlet_pres=junction_pres,
+                flow_model=flow_model
             )
 
             pres_drop_df.loc[0, "name"] = line_row['name']

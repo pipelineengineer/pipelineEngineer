@@ -59,15 +59,14 @@ from PyQt5.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 
 from .logic.correct_directionality import *
-from .logic.homogenous_model_pipeflow import *
+from .logic.two_phase_pipeflow import *
 
-class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
+class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
     INPUT = 'INPUT'
-    CHECK_SELECTED = 'CHECK_SELECTED'
+    FLOW_MODEL = 'FLOW_MODEL'
     OUTPUT = 'OUTPUT'
     LAYERS = 'LAYERS'
-    DOWNSTREAM = 'DOWNSTREAM'
     PIPEFLOW_FLUID = 'PIPEFLOW_FLUID'
     LIQUID = 'LIQUID'
     GAS = 'GAS'
@@ -103,12 +102,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                 layerType=QgsProcessing.TypeVector
             )
         )
-        
-        self.addParameter(QgsProcessingParameterBoolean(
-            self.DOWNSTREAM, 'Pressure Boundary Upstream?',
-            defaultValue=False
-        ))
-
+    
         fluids = ["hgas","lgas","hydrogen","methane","water",
                      "biomethane_pure","biomethane_treated","air"]
 
@@ -140,7 +134,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterEnum(
                 name=self.PIPEFLOW_FLUID,
-                description='Select Fluid',
+                description='Select Primary Fluid (Used to Calculate Flow Distribution)',
                 options=fluids,
                 defaultValue=4  
             )
@@ -175,6 +169,15 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             type=QgsProcessingParameterNumber.Double,
             minValue=0, maxValue=1, defaultValue=0.072
         ))
+
+        self.addParameter(
+            QgsProcessingParameterEnum(
+                name=self.FLOW_MODEL,
+                description='Select Flow Model',
+                options=['Homogenous','Lockhart-Martinelli','Single Phase (For Primary Fluid)'],
+                defaultValue=0  
+            )
+        )
 
         self.addParameter(QgsProcessingParameterNumber(
             self.AMBIENT_TEMP, 'Ambient Temperature',
@@ -319,11 +322,9 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
         if not layers:
             raise QgsProcessingException("No valid input layers selected.")
-
-        is_downstream = self.parameterAsBool(parameters, self.DOWNSTREAM, context)
-
         # Extract all parameters
         fluid_index = self.parameterAsInt(parameters, self.PIPEFLOW_FLUID, context)
+        model_index = self.parameterAsInt(parameters, self.FLOW_MODEL, context)
         mode_index = self.parameterAsInt(parameters, self.CALC_MODE, context)
         max_iter_hyd = self.parameterAsDouble(parameters, self.MAX_ITER_HYD, context)
         max_iter_therm = self.parameterAsDouble(parameters, self.MAX_ITER_THERM, context)
@@ -351,6 +352,8 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
         fluids = ["hgas","lgas","hydrogen","methane","water",
                      "biomethane_pure","biomethane_treated","air"]
+
+        flow_model = ['Homogenous','Lockhart-Martinelli','Single Phase'][model_index]
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
         user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
@@ -409,7 +412,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         # Run your solver
         feedback.pushInfo("Running pipeflow solver…")
 
-        result_layers = homogenous_model_pf(
+        result_layers = two_phase_pipeflow(
                                                 layers=layers,
                                                 pipeflow_fluid=pipeflow_fluid,
                                                 args=settings,
@@ -418,7 +421,7 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                                                 fluid_pres=fluid_pres,fluid_temp=ambient_temp,
                                                 load_network_skeleton=load_network_skeleton,
                                                 chainage=chainage,dem_layer=dem_layer,
-                                                is_downstream=is_downstream,
+                                                flow_model=flow_model,
                                                 feedback=feedback
                                             )
         
@@ -441,10 +444,10 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     # -------------------------------------------------------
 
     def name(self):
-        return 'homogenous_pipeflow'
+        return 'two_phase_pipeflow'
 
     def displayName(self):
-        return self.tr('Two-Phase Flow (Homogenous)')
+        return self.tr('Two-Phase Flow')
 
     def group(self):
         return self.tr(self.groupId())
@@ -455,13 +458,13 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     def shortHelpString(self):
         return self.tr("""
         
-    Two-phase fluid solver (Homogenous Model) for calculating pressures from flowrates for multiphase services.
+    Two-phase fluid solver for calculating pressures from flowrates for multiphase services.
     
     Runs pandapipes pipeflow for primary fluid to determine flow distribution.
     
     Lines with a negative mass flow rate are reversed. Lines with minor flowrates along them (less than 0.000001kg/s) are dropped to avoid errors. An elevation profile at user determined intervals (Chainage) is created for each line.
     
-    User can visualise flow distribution and topology of network by ensuring 'Return Network Skeleton' is checked.
+    User can visualise flow distribution and topography of network by ensuring 'Return Network Skeleton' is checked.
     
     Starting from the pressure boundary (Grid Layer), the pressure along each segment is calculated. Once the end of a line is reached, the "from_junction" of that line is assigned the new calculated pressure drop.
     
@@ -470,5 +473,5 @@ class HomogenousTwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         """)
 
     def createInstance(self):
-        return HomogenousTwoPhaseModelAlgorithm()
+        return TwoPhaseModelAlgorithm()
 
