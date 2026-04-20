@@ -174,7 +174,7 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterEnum(
                 name=self.FLOW_MODEL,
                 description='Select Flow Model',
-                options=['Homogenous','Lockhart-Martinelli','Single Phase (For Primary Fluid)'],
+                options=['Homogenous','Lockhart-Martinelli','Single Phase (For Primary Fluid)','Beggs Brill','Stratified (Mechanistic)'],
                 defaultValue=0  
             )
         )
@@ -353,7 +353,7 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         fluids = ["hgas","lgas","hydrogen","methane","water",
                      "biomethane_pure","biomethane_treated","air"]
 
-        flow_model = ['Homogenous','Lockhart-Martinelli','Single Phase'][model_index]
+        flow_model = ['Homogenous','Lockhart-Martinelli','Single Phase','Beggs Brill','Stratified (Mechanistic)'][model_index]
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
         user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')

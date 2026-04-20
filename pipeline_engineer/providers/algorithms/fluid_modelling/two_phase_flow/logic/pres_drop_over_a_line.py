@@ -5,6 +5,8 @@ import pandas as pd
 from logic.models.homogenous_model import *
 from logic.models.lockhart_martineli import *
 from logic.models.single_phase import *
+from logic.models.beggs_brill import *
+from logic.models.stratified_mechanistic import *
 #from logic.beggs_brill_formula import *
 from logic.dataframes_to_csv import *
 
@@ -81,6 +83,23 @@ def pres_drop_over_line(line_data_df, line_xyz_df,
                            internal_diameter=internal_diameter,line_roughness=line_roughness,
                            chainage=length,elevation=elevation,downstream=False)
 
+        elif flow_model == 'Beggs Brill':
+            
+            
+            
+            df_entry = beggs_brill_method(flow_rate=vol_flow_rate, gas_frac=gas_frac,
+                           liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,gas_viscosity=gas_viscosity,
+                           surf_tens=surf_tens, pres=pres, gas_compressibility=gas_compressibility,molar_mass=molar_mass,fluid_temp=fluid_temp,
+                           internal_diameter=internal_diameter,line_roughness=line_roughness,
+                           chainage=length,elevation=elevation,include_acceleration_factor=False)
+
+        elif flow_model == 'Stratified (Mechanistic)':
+            
+            df_entry = stratified_mechanistic(flow_rate=vol_flow_rate, gas_frac=gas_frac,
+                           liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,gas_viscosity=gas_viscosity,
+                           surf_tens=surf_tens, pres=pres, gas_compressibility=gas_compressibility,molar_mass=molar_mass,fluid_temp=fluid_temp,
+                           internal_diameter=internal_diameter,line_roughness=line_roughness,
+                           chainage=length,elevation=elevation,downstream=False)
 
         df_entry['section_id'] = row['section_id']
 
