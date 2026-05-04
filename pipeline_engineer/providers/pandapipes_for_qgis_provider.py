@@ -41,11 +41,10 @@ from qgis.PyQt.QtGui import QIcon
 #try:
 import pandapipes
 from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import runPipeFlowAlgorithm
-#from .algorithms.fluid_modelling.beggs_brill.beggs_brill_alg import runBeggsBrillPipeFlowAlgorithm
 from .algorithms.fluid_modelling.fluids.fluid_algs import AddFluidValueToLayer
 from .algorithms.fluid_modelling.two_phase_flow.two_phase_flow_alg import TwoPhaseModelAlgorithm
-#from .algorithms.fluid_modelling.homogeneous_model_downstream.downstream_homogenous_model_alg import DownstreamHomogenousTwoPhaseModelAlgorithm
 from .algorithms.fluid_modelling.update_flow_rates.update_flow_rates_alg import updateFlowRatesAlgorithm
+
 #except:
 #    pass
 
@@ -69,10 +68,8 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         Loads all algorithms belonging to this provider.
         """
         self.addAlgorithm(runPipeFlowAlgorithm())
-        #self.addAlgorithm(runBeggsBrillPipeFlowAlgorithm())
         self.addAlgorithm(AddFluidValueToLayer())
         self.addAlgorithm(TwoPhaseModelAlgorithm())
-        #self.addAlgorithm(DownstreamHomogenousTwoPhaseModelAlgorithm())
         self.addAlgorithm(updateFlowRatesAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())

@@ -99,7 +99,7 @@ def pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
             updated_lines_df = pd.concat([updated_lines_df,selected_line_df],ignore_index=True)
 
             # Append new junction to process
-            found_pressures_df = pd.DataFrame({"junction": [from_junction], "p_bar": [line_from_junction_pres]})
+            found_pressures_df = pd.DataFrame({"junction": [from_junction], "p_bar": line_from_junction_pres})
             
             is_present = found_pressures_df['junction'].isin(known_pressures_df['junction'])
             

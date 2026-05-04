@@ -174,9 +174,6 @@ def beggs_brill_method(flow_rate, gas_frac,
 
     inlet_pres = pres + total_pres_drop
 
-    if inlet_pres <= 0:
-        inlet_pres = pres
-
     bb_dict = {
         "flow_regime": flow_regime,
         "liquid_holdup": liquid_holdup,
