@@ -168,15 +168,20 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
                                             'FORMULA':'round("distance",0)',
                                             'OUTPUT':'memory:'})['OUTPUT']
 
+    geom_data_added = processing.run("native:exportaddgeometrycolumns", 
+                                            {'INPUT':chainage_calculated,
+                                             'METHOD':1, # Project CRS
+                                             'OUTPUT':'memory:'})['OUTPUT']
+
     raster_sampling = processing.run("native:rastersampling", 
-                                        {'INPUT':chainage_calculated,
+                                        {'INPUT':geom_data_added,
                                         'RASTERCOPY':raster_layer,
                                         'COLUMN_PREFIX':'elev',
                                         'OUTPUT':'memory:'})['OUTPUT']
 
-    dropped_fields = processing.run("native:deletecolumn", 
+    dropped_fields = processing.run("native:retainfields", 
                                         {'INPUT':raster_sampling,
-                                        'COLUMN':['distance','angle'],
+                                        'FIELDS':['name','chainage_m','xcoord','ycoord','elev1'],
                                         'OUTPUT':'memory:'})['OUTPUT']
     
     dropped_fields_two = processing.run("native:deletecolumn", 

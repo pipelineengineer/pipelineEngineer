@@ -30,11 +30,18 @@ from qgis.core import QgsProcessingAlgorithm, QgsApplication
 from .resources import *
 # Import the code for the dialog
 
-from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
+
+#try:
+from .providers.pandapower_for_qgis_provider import PandaPowerForQGISProvider
+from .ui.power_network_component_creator.power_network_component_dialog import PowerComponentDialog
+pandapower_avail = True
+
+#except:
+#    pandapower_avail = False
 
 try:
     from .ui.network_component_creator.network_component_dialog import ComponentDialog
-    
+    from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
     from .ui.fluids_browser.fluids_dialog import FluidsDialog
     
     fluids_avail = True
@@ -51,6 +58,7 @@ except:
     
 from .providers.network_cleanup_provider import NetworkCleanupProvider
 from .providers.material_takeoff_provider import materialTakeOffProvider
+
 import os.path
 
 
@@ -68,9 +76,17 @@ class PipelineEngineer:
         # Adding Provider
         try:
             self.provider = PandaPipesForQGISProvider()
+            
         except:
             pass
+        
+        try:
+            self.provider = PandaPowerForQGISProvider()
             
+        except:
+            pass
+
+        
         self.net_provider = NetworkCleanupProvider()
         self.mto_provider = materialTakeOffProvider()
         
@@ -78,6 +94,11 @@ class PipelineEngineer:
         try:
             self.fluid_dlg = FluidsDialog()
             self.network_dlg = ComponentDialog()
+        except:
+            pass
+        
+        try:
+            self.power_dlg = PowerComponentDialog()
         except:
             pass
         
@@ -203,7 +224,14 @@ class PipelineEngineer:
         if fluids_avail:
             self.provider = PandaPipesForQGISProvider()
             QgsApplication.processingRegistry().addProvider(self.provider)
+        
+        try:
+            self.power_provider = PandaPowerForQGISProvider()
+            QgsApplication.processingRegistry().addProvider(self.power_provider)
             
+        except:
+            pass
+        
         QgsApplication.processingRegistry().addProvider(self.net_provider)
         QgsApplication.processingRegistry().addProvider(self.mto_provider)
         
@@ -213,6 +241,7 @@ class PipelineEngineer:
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         pp_icon_path = os.path.join(script_dir,'icons','pandapipes.png')
+        ppower_icon_path = os.path.join(script_dir,'icons','pandapower.png')
         mto_icon_path = os.path.join(script_dir,'icons','definetely_an_original_icon.png')
         fluids_icon_path = os.path.join(script_dir,'icons','fluids.png')
 
@@ -227,6 +256,13 @@ class PipelineEngineer:
                 fluids_icon_path,
                 text=self.tr(u'Fluids Browser'),
                 callback=self.run_fluids,
+                parent=self.iface.mainWindow())
+
+        if pandapower_avail:
+            self.add_action(
+                ppower_icon_path,
+                text=self.tr(u'Create Pandapower Component'),
+                callback=self.run_power_component,
                 parent=self.iface.mainWindow())
 
         if mto_avail:
@@ -263,6 +299,11 @@ class PipelineEngineer:
         except:
             pass
         
+        try:
+            QgsApplication.processingRegistry().removeProvider(self.power_provider)
+        except:
+            pass
+        
         QgsApplication.processingRegistry().removeProvider(self.net_provider)
         QgsApplication.processingRegistry().removeProvider(self.mto_provider)
         for action in self.actions:
@@ -285,6 +326,25 @@ class PipelineEngineer:
         self.network_dlg.show()
         # Run the dialog event loop
         result = self.network_dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass
+
+    def run_power_component(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.power_dlg = PowerComponentDialog()
+
+        # show the dialog
+        self.power_dlg.show()
+        # Run the dialog event loop
+        result = self.power_dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and

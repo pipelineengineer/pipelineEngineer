@@ -40,15 +40,13 @@ from qgis.PyQt.QtGui import QIcon
 
 #try:
 import pandapipes
-from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import runPipeFlowAlgorithm
-from .algorithms.fluid_modelling.fluids.fluid_algs import AddFluidValueToLayer
-from .algorithms.fluid_modelling.incompressible_flow.incompressible_flow_alg import IncompressibleFlowAlgroithm
-from .algorithms.fluid_modelling.update_flow_rates.update_flow_rates_alg import updateFlowRatesAlgorithm
+from .algorithms.power_modelling.ac_power_flow.ac_powerflow_alg import runACPowerFlowAlgorithm
+from .algorithms.power_modelling.dc_power_flow.dc_powerflow_alg import runDCPowerFlowAlgorithm
 
 #except:
 #    pass
 
-class PandaPipesForQGISProvider(QgsProcessingProvider):
+class PandaPowerForQGISProvider(QgsProcessingProvider):
 
     def __init__(self):
         """
@@ -67,10 +65,9 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         """
         Loads all algorithms belonging to this provider.
         """
-        self.addAlgorithm(runPipeFlowAlgorithm())
-        self.addAlgorithm(AddFluidValueToLayer())
-        self.addAlgorithm(updateFlowRatesAlgorithm())
-        self.addAlgorithm(IncompressibleFlowAlgroithm())
+        self.addAlgorithm(runACPowerFlowAlgorithm())
+        self.addAlgorithm(runDCPowerFlowAlgorithm())
+        
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 
@@ -80,7 +77,7 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         string should be a unique, short, character only string, eg "qgis" or
         "gdal". This string should not be localised.
         """
-        return 'pandapipes_for_qgis'
+        return 'pandapower_for_qgis'
 
     def name(self):
         """
@@ -89,7 +86,7 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
 
         This string should be short (e.g. "Lastools") and localised.
         """
-        return self.tr('Fluid Modelling')
+        return self.tr('Power Modelling')
 
     def icon(self):
         """
@@ -97,7 +94,7 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         the Processing toolbox.
         """
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(script_dir,'icons','two_phase_flow.png')
+        icon_path = os.path.join(script_dir,'icons','pandapower.png')
         return QIcon(icon_path)
 
     def longName(self):

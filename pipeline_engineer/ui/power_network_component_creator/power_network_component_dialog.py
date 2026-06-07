@@ -69,28 +69,30 @@ from qgis.gui import QgsFileWidget
 from qgis.utils import iface
 
 # Local imports
-from .logic.component_fields import *
+from .logic.power_component_fields import *
 from .logic.function_helpers import *
 
-
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'network_component_dialog_base.ui'))
+    os.path.dirname(__file__), 'power_network_component_dialog_base.ui'))
 
-class ComponentDialog(QDialog, FORM_CLASS):
+class PowerComponentDialog(QDialog, FORM_CLASS):
     def __init__(self, parent=None):
-        super(ComponentDialog, self).__init__(parent)
+        super(PowerComponentDialog, self).__init__(parent)
         self.setupUi(self)  # Load the UI components
     
         # Combo Boxes
 
         components = [
-                "Junction","Pipe","Valve",
-                "Sink","Source","Mass Storage",
-                "External Grid","Heat Exchanger",
-                "Pump","Circulation Pump Mass", "Circulation Pump Pressure",
-                "Compressor","Pressure Control","Flow Control"
-                    ]
-        
+                        "Bus","Bus DC","Line","Line DC","Switch",
+                        "Load","Load DC","Asymmetric Load","Motor",
+                        "Static Generator","Asymmetric Static Generator","Generator","External Grid","Source DC",
+                        "Transformer","Three Winding Transformer","Shunt","Impedance","Ward","Extended Ward",
+                        "HV DC Link / DC Line","Measurement","Storage","Static Var Compensator (SVC)",
+                        "Thyristor-Controlled Series Capacitor (TCSC)",
+                        "Static Synchronous Compensator (SSC)",
+                        "Voltage Source Converter (VSC)", "Stacked Voltage Source Converter (VSC Stacked)"
+                      ]
+
         self.cmbComponentType.addItems(components)
 
         self.update_geometry()
@@ -147,7 +149,7 @@ class ComponentDialog(QDialog, FORM_CLASS):
         self.twFields.clear()
 
         component_type = self.cmbComponentType.currentText()
-        component_fields = component_fields_dict[component_type]
+        component_fields = power_component_fields_dict[component_type]
 
         for field in component_fields:
             item = QTreeWidgetItem([field])
@@ -156,7 +158,7 @@ class ComponentDialog(QDialog, FORM_CLASS):
 
     def update_geometry(self):
         component_type = self.cmbComponentType.currentText()
-        available_geometries = component_geometries_dict[component_type]
+        available_geometries = power_component_geometries_dict[component_type]
 
         self.cmbLayerGeometryType.clear()
         self.cmbLayerGeometryType.addItems(available_geometries)
@@ -243,10 +245,10 @@ class ComponentDialog(QDialog, FORM_CLASS):
     def update_adapt_geom_types(self):
         component_type = self.cmbComponentType.currentText()
 
-        if component_type == 'Junction' or component_type == 'Pipe':
+        if component_type in ["Line", "Line DC", "Transformer", "Three Winding Transformer", "HV DC Link / DC Line", "Impedance", "Thyristor-Controlled Series Capacitor (TCSC)", "Switch"]:
             self.mlcbBaseLayer.setFilters((QgsMapLayerProxyModel.LineLayer))
         else:
-            self.mlcbBaseLayer.setFilters((QgsMapLayerProxyModel.VectorLayer))
+            self.mlcbBaseLayer.setFilters((QgsMapLayerProxyModel.PointLayer))
 
     def on_create_component_clicked(self):
         # Pulling list of checked fields
@@ -265,13 +267,13 @@ class ComponentDialog(QDialog, FORM_CLASS):
         project = QgsProject.instance()
         project_crs = project.crs().authid()
 
-        jct_layer_name = self.mlcbJunctionLayer.currentText() # Junction Layer
+        bus_layer_name = self.mlcbJunctionLayer.currentText() # Junction Layer
 
-        if component != 'Junction':
-            if type(jct_layer_name) == QgsVectorLayer:
-                junction_layer = jct_layer_name
+        if 'Bus' not in component:
+            if type(bus_layer_name) == QgsVectorLayer:
+                bus_layer_name = bus_layer_name
             else:
-                junction_layer = QgsProject.instance().mapLayersByName(jct_layer_name)[0]
+                bus_layer_name = QgsProject.instance().mapLayersByName(bus_layer_name)[0]
 
         def create_layer(geom_type,crs,name):
             return QgsVectorLayer(f"{geom_type}?crs={crs}",name,"memory")
@@ -284,7 +286,7 @@ class ComponentDialog(QDialog, FORM_CLASS):
         filtered_fields = []
         for fname in fields:
             # Find the QgsField with this name in field_types
-            match = next((f for f in field_types if f.name() == fname), None)
+            match = next((f for f in power_field_types if f.name() == fname), None)
             if match:
                 filtered_fields.append(match)
 
@@ -347,11 +349,13 @@ class ComponentDialog(QDialog, FORM_CLASS):
                 fields_to_keep.append(field_name)
 
         if component_type == 'Junction':
+            print('CHECK 1')
             layer = create_junction_layer_from_existing(layer=layer,fields_to_keep=fields_to_keep)
 
             fields_to_keep.extend(['name'])
 
         elif component_type == 'Pipe':
+            print('CHECK 2')
             layer = create_pipe_layer_from_existing(layer=layer,fields_to_keep=fields_to_keep,
                                                     junction_layer=junction_layer,
                                                     component_name_field=component_name_field)
@@ -368,6 +372,7 @@ class ComponentDialog(QDialog, FORM_CLASS):
                 pass
             
         elif 'junction' in fields:
+            print('CHECK 3')
             layer = create_component_with_junctions_from_existing(layer=layer,fields_to_keep=fields_to_keep,
                                                                   junction_layer=junction_layer,component_name_field=component_name_field)
 

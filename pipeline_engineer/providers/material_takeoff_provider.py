@@ -92,7 +92,7 @@ class materialTakeOffProvider(QgsProcessingProvider):
         the Processing toolbox.
         """
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        icon_path = os.path.join(script_dir,'icons','network_cleanup.png')
+        icon_path = os.path.join(script_dir,'icons','mto_builder.png')
         return QIcon(icon_path)
 
     def longName(self):

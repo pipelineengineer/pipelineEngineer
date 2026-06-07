@@ -1,28 +1,36 @@
 import os
-from .pressure_through_a_network import *
+from .incompressible_pres_thru_network import *
 from ...general_logic.function_helpers import *
 from ...pipeflow.logic.running_pipeflow import *
 from ...fluids.logic.fluids import *
 from .correct_directionality import *
+from .dataframes_to_csv import *
 
-def two_phase_pipeflow(layers,pipeflow_fluid,args,
-                             liquid_phase,gas_phase,
-                             gas_frac,surf_tens,
+def incompressible_flow(layers,args,
+                             liquid_phase,
                              fluid_pres,fluid_temp,
                              load_network_skeleton,
-                             chainage,dem_layer,flow_model,
+                             chainage,dem_layer,vapour_pres,multiplier,
                              feedback):
     
     liquid_density = get_fluid_parameter(parameter='density',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
     liquid_viscosity = get_fluid_parameter(parameter='viscosity',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
+
+    layers_for_pipeflow = []
+    two_phase_layers = []
     
-    gas_compressibility = get_fluid_parameter(parameter='compressibility',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
-    molar_mass = get_fluid_parameter(parameter='molar_mass',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
-    gas_viscosity = get_fluid_parameter(parameter='viscosity',chosen_fluid=gas_phase,temperature=fluid_temp,pressure=fluid_pres)
+    for layer in layers:
+        
+        layer_name = layer.name().lower()
+        
+        if "(two-phase flow)" not in layer_name:
+            layers_for_pipeflow.append(layer)
+        else:
+            two_phase_layers.append(layer)
+
+    pipeflow_layers = run_pipeflow(layers=layers_for_pipeflow,fluid=liquid_phase,args=args,load_layers=False)
     
-    pipeflow_layers = run_pipeflow(layers=layers,fluid=pipeflow_fluid,args=args,load_layers=False)
-    
-    homogenous_model_results = []
+    pipeflow_result_layers = []
     
     for layer in pipeflow_layers:
         layer_name = layer.name().lower()
@@ -34,12 +42,13 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
             junction_layer = layer
         elif 'grid layer' in layer_name:
             grid_layer = layer
-            homogenous_model_results.append(layer)
+            pipeflow_result_layers.append(layer)
         elif 'pump layer' in layer_name:
             pump_layer = layer
-            homogenous_model_results.append(layer)
+            pipeflow_result_layers.append(layer)
+            two_phase_layers.append(layer)
         else:
-            homogenous_model_results.append(layer)
+            pipeflow_result_layers.append(layer)
     
     feedback.pushInfo("Collecting line elevation profiles...")
     network_xyz, network_skeleton  = create_network_xyz_layer(pipe_results_layer=pipe_results_layer,
@@ -50,8 +59,8 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
     network_xyz.setName('Network XYZ Data')
     
     if load_network_skeleton:
-        homogenous_model_results.append(network_xyz)
-        homogenous_model_results.append(network_skeleton)
+        pipeflow_result_layers.append(network_xyz)
+        pipeflow_result_layers.append(network_skeleton)
     
     line_data_df = layer_to_df(network_skeleton)
     line_xyz_df = layer_to_df(network_xyz)
@@ -64,19 +73,19 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
     
     feedback.pushInfo("Calculating line pressures...")
     
-    line_df, junction_df,master_results_df = pressures_through_a_network(line_data_df, line_xyz_df,grids_df,pump_df,
-                        liquid_density, liquid_viscosity,
-                        gas_frac,gas_compressibility,molar_mass,gas_viscosity,fluid_temp,
-                        surf_tens,flow_model)
+    line_df, junction_df, master_results_df = incompressible_pres_through_network(network_df=line_data_df,network_xyz_df=line_xyz_df,
+                                                                             boundaries_df=grids_df,
+                                                                             liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,
+                                                                             vapour_pres=vapour_pres,fluid_temp=fluid_temp,multiplier=multiplier,two_phase_layers=two_phase_layers)
 
     dataframes = [line_df, junction_df,master_results_df]
     file_names = ['junction_results','pipe_results']
     
-    file_names = ['bb_junction_results','bb_pipe_results','bb_master_results']
+    file_names = ['junction_results','pipe_results','master_results']
     
     csv_files = dataframes_to_csv(dataframes,file_names)
     
-    homogenous_model_layers = []
+    two_phase_layers = []
     
     feedback.pushInfo("Saving results to layers...")
     for layer in csv_files:
@@ -84,7 +93,7 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
         
         print(layer_name)
         
-        if layer_name == 'bb_pipe_results':
+        if layer_name == 'pipe_results':
 
             retained = processing.run("native:retainfields", 
                                                 {'INPUT':network_skeleton,
@@ -112,9 +121,9 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
         
             # adding to session
             joined_layer_pipe.setName('Two-Phase Pipe Results Layer')
-            homogenous_model_layers.append(joined_layer_pipe)
+            two_phase_layers.append(joined_layer_pipe)
         
-        elif layer_name == 'bb_junction_results':
+        elif layer_name == 'junction_results':
             
             retained = processing.run("native:retainfields", 
                                                 {'INPUT':junction_layer,
@@ -149,19 +158,54 @@ def two_phase_pipeflow(layers,pipeflow_fluid,args,
             # adding to session
             null_removed.setName('Two-Phase Junction Results Layer')
             
-            homogenous_model_layers.append(null_removed)
+            two_phase_layers.append(null_removed)
             
         else:
             layer.selectAll()
             
-            working_layer = processing.run("native:saveselectedfeatures", 
-                                                    {'INPUT':layer,
-                                                     'OUTPUT':'memory:'})['OUTPUT']
+            # Create output line layer (same CRS as input)
+            crs = layer.crs()
+            line_layer = QgsVectorLayer(f"LineString?crs={crs.authid()}", "Pressure Drop By Section", "memory")
+            provider = line_layer.dataProvider()
+
+            # Add fields (optional: copy attributes)
+            provider.addAttributes(layer.fields())
+            line_layer.updateFields()
+
+            features = []
+
+            for f in layer.getFeatures():
+                start_x = f["xcoord"]
+                start_y = f["ycoord"]
+                end_x = f["end_xcoord"]
+                end_y = f["end_ycoord"]
+
+                # Create line geometry
+                line = QgsGeometry.fromPolylineXY([
+                    QgsPointXY(start_x, start_y),
+                    QgsPointXY(end_x, end_y)
+                ])
+
+                new_feat = QgsFeature()
+                new_feat.setGeometry(line)
+                new_feat.setAttributes(f.attributes())
+
+                features.append(new_feat)
+
+            provider.addFeatures(features)
+            line_layer.updateExtents()
             
-            working_layer.setName('Two-Phase Pressure Drop By Section')
+            # applying layer style
+            script_directory = os.path.dirname(os.path.abspath(__file__))
+            folder_path = os.path.join(script_directory, 'layer_styles')
+            os.makedirs(folder_path, exist_ok=True)
+
+            style_path = os.path.join(folder_path, 'pres_drop_by_section.qml')
+
+            re_calc_graduated(layer=line_layer, qml_path=style_path)
             
-            homogenous_model_layers.append(working_layer)
+            two_phase_layers.append(line_layer)
             
-    homogenous_model_results.extend(homogenous_model_layers)
+    pipeflow_result_layers.extend(two_phase_layers)
     
-    return homogenous_model_results
+    return pipeflow_result_layers

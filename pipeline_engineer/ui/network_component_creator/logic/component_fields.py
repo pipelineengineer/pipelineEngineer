@@ -55,8 +55,7 @@ component_fields_dict = { "Junction": ['pn_bar','tfluid_k', 'height_m','name',
 
                            "Flow Control":['from_junction', 'to_junction', 'controlled_mdot_kg_per_s',
                                            'control_active', 'name', 
-                                           'in_service', 'type'] }
-
+                                           'in_service', 'type']}
 
 component_geometries_dict = {
     "Junction": ['Point'],
@@ -85,7 +84,7 @@ component_geometries_dict = {
 
     "Pressure Control":['Point','LineString','Polygon'],
 
-    "Flow Control":['Point','LineString','Polygon']
+    "Flow Control":['Point','LineString','Polygon'],
                     }
 
 field_types = fields = [

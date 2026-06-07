@@ -59,19 +59,16 @@ from PyQt5.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 
 from .logic.correct_directionality import *
-from .logic.two_phase_pipeflow import *
+from .logic.incompressible_pipeflow import *
 
-class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
+class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
 
     INPUT = 'INPUT'
-    FLOW_MODEL = 'FLOW_MODEL'
     OUTPUT = 'OUTPUT'
     LAYERS = 'LAYERS'
-    PIPEFLOW_FLUID = 'PIPEFLOW_FLUID'
     LIQUID = 'LIQUID'
-    GAS = 'GAS'
-    GAS_FRACTION = 'GAS_FRACTION'
-    SURF_TENS = 'SURF_TENS'
+    PRES_MULTIPLIER = 'PRES_MULTIPLIER'
+    VAPOUR_PRES = 'VAPOUR_PRES'
     AMBIENT_TEMP = 'AMBIENT_TEMP'
     FLUID_PRES = 'FLUID_PRES'
     RETURN_NETWORK = 'RETURN_NETWORK'
@@ -128,18 +125,6 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         
         liquids.extend(user_liquid_list)
 
-        gases=["hgas","lgas","hydrogen","methane","biomethane_pure","biomethane_treated","air"]
-        gases.extend(user_gas_list)
-
-        self.addParameter(
-            QgsProcessingParameterEnum(
-                name=self.PIPEFLOW_FLUID,
-                description='Select Primary Fluid (Used to Calculate Flow Distribution)',
-                options=fluids,
-                defaultValue=4  
-            )
-        )
-
         self.addParameter(
             QgsProcessingParameterEnum(
                 name=self.LIQUID,
@@ -148,41 +133,23 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
                 defaultValue=0  
             )
         )
-        
-        self.addParameter(
-            QgsProcessingParameterEnum(
-                name=self.GAS,
-                description='Select Gas Phase',
-                options=gases,
-                defaultValue=3 
-            )
-        )
-
-        self.addParameter(QgsProcessingParameterNumber(
-            self.GAS_FRACTION, 'Gas Fraction',
-            type=QgsProcessingParameterNumber.Double,
-            minValue=0, maxValue=1, defaultValue=0.1
-        ))
-        
-        self.addParameter(QgsProcessingParameterNumber(
-            self.SURF_TENS, 'Surface Tension',
-            type=QgsProcessingParameterNumber.Double,
-            minValue=0, maxValue=1, defaultValue=0.072
-        ))
-
-        self.addParameter(
-            QgsProcessingParameterEnum(
-                name=self.FLOW_MODEL,
-                description='Select Flow Model',
-                options=['Single Phase (For Liquid Phase)','Beggs Brill','Gas Breakout at Vapour Pressure'],
-                defaultValue=2 
-            )
-        )
 
         self.addParameter(QgsProcessingParameterNumber(
             self.AMBIENT_TEMP, 'Ambient Temperature',
             type=QgsProcessingParameterNumber.Double,
             minValue=0, maxValue=100000, defaultValue=293.15
+        ))
+        
+        self.addParameter(QgsProcessingParameterNumber(
+            self.VAPOUR_PRES, 'Liquid Vapour Pressure: ',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=-100000, maxValue=100000, defaultValue=0.0563
+        ))
+        
+        self.addParameter(QgsProcessingParameterNumber(
+            self.PRES_MULTIPLIER, 'Pressure Multiplier (Multiplies Calculated Pressure Loss by a Factor): ',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=-100000, maxValue=100000, defaultValue=1
         ))
         
         self.addParameter(QgsProcessingParameterNumber(
@@ -323,14 +290,14 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         if not layers:
             raise QgsProcessingException("No valid input layers selected.")
         # Extract all parameters
-        fluid_index = self.parameterAsInt(parameters, self.PIPEFLOW_FLUID, context)
-        model_index = self.parameterAsInt(parameters, self.FLOW_MODEL, context)
         mode_index = self.parameterAsInt(parameters, self.CALC_MODE, context)
         max_iter_hyd = self.parameterAsDouble(parameters, self.MAX_ITER_HYD, context)
         max_iter_therm = self.parameterAsDouble(parameters, self.MAX_ITER_THERM, context)
         tol_p = self.parameterAsDouble(parameters, self.PRES_TOL, context)
         tol_m = self.parameterAsDouble(parameters, self.VEL_TOL, context)
         tol_T = self.parameterAsDouble(parameters, self.TEMP_TOL, context)
+        multiplier = self.parameterAsDouble(parameters, self.PRES_MULTIPLIER, context)
+        vapour_pres = self.parameterAsDouble(parameters, self.VAPOUR_PRES, context)
         tol_res = self.parameterAsDouble(parameters, self.RES_TOL, context)
         ambient_temp = self.parameterAsDouble(parameters, self.AMBIENT_TEMP, context)
         friction_model_index = self.parameterAsInt(parameters, self.FRIC_MODEL, context)
@@ -352,8 +319,6 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
         fluids = ["hgas","lgas","hydrogen","methane","water",
                      "biomethane_pure","biomethane_treated","air"]
-
-        flow_model = ['Single Phase','Beggs Brill','Gas Breakout at Vapour Pressure'][model_index]
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
         user_fluids_path = os.path.join(script_dir, 'user_settings','user_fluids.csv')
@@ -381,15 +346,11 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
 
         nonlinear_methods =['constant', 'automatic']
 
-        pipeflow_fluid = fluids[fluid_index]
         mode = modes[mode_index]
         friction_model = friction_models[friction_model_index]
         nonlinear_method = nonlinear_methods[nonlinear_method_index]
         
         liquid_phase = liquids[self.parameterAsInt(parameters, self.LIQUID, context)]
-        gas_phase = gases[self.parameterAsInt(parameters, self.GAS, context)]
-        gas_fraction = self.parameterAsDouble(parameters, self.GAS_FRACTION, context)
-        surf_tens = self.parameterAsDouble(parameters, self.SURF_TENS, context)
         
         fluid_pres =  self.parameterAsDouble(parameters, self.FLUID_PRES, context)
         
@@ -412,16 +373,14 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
         # Run your solver
         feedback.pushInfo("Running pipeflow solver…")
 
-        result_layers = two_phase_pipeflow(
+        result_layers = incompressible_flow(
                                                 layers=layers,
-                                                pipeflow_fluid=pipeflow_fluid,
                                                 args=settings,
-                                                liquid_phase=liquid_phase,gas_phase=gas_phase,
-                                                gas_frac=gas_fraction,surf_tens=surf_tens,
+                                                liquid_phase=liquid_phase,
                                                 fluid_pres=fluid_pres,fluid_temp=ambient_temp,
                                                 load_network_skeleton=load_network_skeleton,
                                                 chainage=chainage,dem_layer=dem_layer,
-                                                flow_model=flow_model,
+                                                vapour_pres=vapour_pres,multiplier=multiplier,
                                                 feedback=feedback
                                             )
         
@@ -444,10 +403,10 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     # -------------------------------------------------------
 
     def name(self):
-        return 'two_phase_pipeflow'
+        return 'incompressible_pipeflow'
 
     def displayName(self):
-        return self.tr('Two-Phase Flow')
+        return self.tr('Incompressible Flow')
 
     def group(self):
         return self.tr(self.groupId())
@@ -458,7 +417,7 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     def shortHelpString(self):
         return self.tr("""
         
-    Two-phase fluid solver for calculating pressures from flowrates for multiphase services.
+    Single-phase incompressible fluid solver for calculating pressures from flowrates.
     
     Runs pandapipes pipeflow for primary fluid to determine flow distribution.
     
@@ -466,12 +425,12 @@ class TwoPhaseModelAlgorithm(QgsProcessingAlgorithm):
     
     User can visualise flow distribution and topography of network by ensuring 'Return Network Skeleton' is checked.
     
-    Starting from the pressure boundary (Grid Layer), the pressure along each segment is calculated. Once the end of a line is reached, the "from_junction" of that line is assigned the new calculated pressure drop.
+    Starting from the pressure boundary (Grid Layer), the pressure drop along each segment is calculated. Once the end of a line is reached, the "from_junction" of that line is assigned the new calculated pressure drop.
     
     This process is repeated until every node of each line remaining is calculated.
         
         """)
 
     def createInstance(self):
-        return TwoPhaseModelAlgorithm()
+        return IncompressibleFlowAlgroithm()
 
