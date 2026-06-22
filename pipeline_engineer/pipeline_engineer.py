@@ -30,14 +30,13 @@ from qgis.core import QgsProcessingAlgorithm, QgsApplication
 from .resources import *
 # Import the code for the dialog
 
+try:
+    from .modules.pandapower.pandapower_for_qgis_provider import PandaPowerForQGISProvider
+    from .modules.pandapower.power_network_component_creator.power_network_component_dialog import PowerComponentDialog
+    pandapower_avail = True
 
-#try:
-from .providers.pandapower_for_qgis_provider import PandaPowerForQGISProvider
-from .ui.power_network_component_creator.power_network_component_dialog import PowerComponentDialog
-pandapower_avail = True
-
-#except:
-#    pandapower_avail = False
+except:
+    pandapower_avail = False
 
 try:
     from .ui.network_component_creator.network_component_dialog import ComponentDialog
@@ -49,13 +48,17 @@ except:
     fluids_avail = False
     pass
 
+from .ui.style_applicator.style_applicator_dockwidget import StyleApplicatorDockWidget
+
+
 try:
-    from .ui.mto_builder.material_takeoff_builder_dockwidget_v2 import MaterialTakeOffBuilderDockWidget
+    from .ui.assembly_manager.assembly_manager_dialog import AssemblyManagerDialog
     mto_avail = True
+
 except:
     mto_avail = False
     pass
-    
+
 from .providers.network_cleanup_provider import NetworkCleanupProvider
 from .providers.material_takeoff_provider import materialTakeOffProvider
 
@@ -101,6 +104,8 @@ class PipelineEngineer:
             self.power_dlg = PowerComponentDialog()
         except:
             pass
+        
+        self.style_dw = StyleApplicatorDockWidget()
         
         # Save reference to the QGIS interface
         self.iface = iface
@@ -241,8 +246,9 @@ class PipelineEngineer:
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         pp_icon_path = os.path.join(script_dir,'icons','pandapipes.png')
-        ppower_icon_path = os.path.join(script_dir,'icons','pandapower.png')
-        mto_icon_path = os.path.join(script_dir,'icons','definetely_an_original_icon.png')
+        ppower_icon_path = os.path.join(script_dir,'modules','pandapower','icons','pandapower.png')
+        style_icon_path = os.path.join(script_dir,'icons','style.png')
+        mto_icon_path = os.path.join(script_dir,'icons','mto_builder.png')
         fluids_icon_path = os.path.join(script_dir,'icons','fluids.png')
 
         if fluids_avail:
@@ -264,12 +270,18 @@ class PipelineEngineer:
                 text=self.tr(u'Create Pandapower Component'),
                 callback=self.run_power_component,
                 parent=self.iface.mainWindow())
-
+                
         if mto_avail:
             self.add_action(
-            mto_icon_path,
-            text=self.tr(u'MTO Builder'),
-            callback=self.run_mto,
+                mto_icon_path,
+                text=self.tr(u'Assembly Manager'),
+                callback=self.run_assembly_manager,
+                parent=self.iface.mainWindow())
+            
+        self.add_action(
+            style_icon_path,
+            text=self.tr(u'Style Applicator'),
+            callback=self.run_style_applicator,
             parent=self.iface.mainWindow())
         
         # will be set False in run()
@@ -311,6 +323,26 @@ class PipelineEngineer:
                 self.tr(u'&Pipeline Engineer'),
                 action)
             self.iface.removeToolBarIcon(action)
+
+    def run_assembly_manager(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.network_dlg = AssemblyManagerDialog()
+
+        # show the dialog
+        self.network_dlg.show()
+        # Run the dialog event loop
+        result = self.network_dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass
+
 
 
     def run_component(self):
@@ -369,3 +401,25 @@ class PipelineEngineer:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+    
+    def run_style_applicator(self):
+
+        if not self.pluginIsActive:
+            self.pluginIsActive = True
+
+            #print "** STARTING MaterialTakeOffBuilder"
+
+            # dockwidget may not exist if:
+            #    first run of plugin
+            #    removed on close (see self.onClosePlugin method)
+            if self.dockwidget == None:
+                # Create the dockwidget (after translation) and keep reference
+                self.dockwidget = StyleApplicatorDockWidget()
+
+            # connect to provide cleanup on closing of dockwidget
+            self.dockwidget.closingPlugin.connect(self.onClosePlugin)
+
+            # show the dockwidget
+            # TODO: fix to allow choice of dock location
+            self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+            self.dockwidget.show()

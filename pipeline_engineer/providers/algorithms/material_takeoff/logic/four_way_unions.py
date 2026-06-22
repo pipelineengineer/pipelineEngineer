@@ -1,8 +1,6 @@
 import os
 import processing
 
-import pandas as pd
-
 from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer
 
 def summarise_four_way_unions(layer,id_field,id_expression):

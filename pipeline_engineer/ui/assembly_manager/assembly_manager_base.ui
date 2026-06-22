@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AssemblyManagerDialogBase</class>
+ <widget class="QDialog" name="AssemblyManagerDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>647</width>
+    <height>621</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Assembly Manager</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="10" column="1">
+    <widget class="QComboBox" name="cmbAssemblyListSheet"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QgsMapLayerComboBox" name="mlcbFeatureLayer"/>
+   </item>
+   <item row="13" column="1">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>Select Parameter List:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Select Feature Layer:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="1">
+    <widget class="QPushButton" name="pbGenerateFittingList">
+     <property name="text">
+      <string>Generate Fitting List</string>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="1">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="6" column="1">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Navigate to Workbook:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QTreeWidget" name="twFieldsToKeep">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="headerHidden">
+      <bool>true</bool>
+     </property>
+     <column>
+      <property name="text">
+       <string notr="true">1</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>Select Assembly Field:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Select Filter List:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="1">
+    <widget class="QComboBox" name="cmbFilters"/>
+   </item>
+   <item row="7" column="1">
+    <widget class="QgsFileWidget" name="fwAssemblyList"/>
+   </item>
+   <item row="4" column="1">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Fields to Retain:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QPushButton" name="pbRefreshSheets">
+     <property name="text">
+      <string>Refresh Sheets</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Select Assembly List:-</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="1">
+    <widget class="QComboBox" name="cmbParameterList"/>
+   </item>
+   <item row="3" column="1">
+    <widget class="QgsFieldComboBox" name="fcbAssemblyField"/>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFieldComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsfieldcombobox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsFileWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsfilewidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

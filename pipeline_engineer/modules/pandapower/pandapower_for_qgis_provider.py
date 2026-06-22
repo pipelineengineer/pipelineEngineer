@@ -93,7 +93,7 @@ class PandaPowerForQGISProvider(QgsProcessingProvider):
         Should return a QIcon which is used for your provider inside
         the Processing toolbox.
         """
-        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir,'icons','pandapower.png')
         return QIcon(icon_path)
 

@@ -40,7 +40,7 @@ from qgis.PyQt.QtGui import QIcon
 
 #try:
 import pandapipes
-from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import runPipeFlowAlgorithm
+from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import PipeFlowAlgorithm
 from .algorithms.fluid_modelling.fluids.fluid_algs import AddFluidValueToLayer
 from .algorithms.fluid_modelling.incompressible_flow.incompressible_flow_alg import IncompressibleFlowAlgroithm
 from .algorithms.fluid_modelling.update_flow_rates.update_flow_rates_alg import updateFlowRatesAlgorithm
@@ -67,7 +67,7 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         """
         Loads all algorithms belonging to this provider.
         """
-        self.addAlgorithm(runPipeFlowAlgorithm())
+        self.addAlgorithm(PipeFlowAlgorithm())
         self.addAlgorithm(AddFluidValueToLayer())
         self.addAlgorithm(updateFlowRatesAlgorithm())
         self.addAlgorithm(IncompressibleFlowAlgroithm())

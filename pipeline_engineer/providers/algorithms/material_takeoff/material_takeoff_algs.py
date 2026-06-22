@@ -42,13 +42,20 @@ from qgis.core import (
     QgsProcessingParameterNumber,
     QgsProcessingParameterEnum,
     QgsProcessingParameterBoolean,
-    QgsProcessingParameterExpression
+    QgsProcessingParameterExpression,
+    QgsProcessingParameterRasterLayer
+
 )
 
 from .logic.tee_junctions import summarise_tees
 from .logic.bends import summarise_bends
 from .logic.four_way_unions import summarise_four_way_unions
+from .logic.attach_layer_attributes import attach_layer_attributes
 
+try:
+    from .logic.vents_drains import *
+except:
+    pass
 
 class TeeJunctionsAlgorithm(QgsProcessingAlgorithm):
 
@@ -380,3 +387,296 @@ class FourWayUnionsAlgorithm(QgsProcessingAlgorithm):
     def createInstance(self):
         return FourWayUnionsAlgorithm()
     
+class JoinAttributesAlgorithm(QgsProcessingAlgorithm):
+
+    ATTRIBUTES_LAYER = 'ATTRIBUTES_LAYER'
+    ATTRIBUTE_ID_FIELD = 'ATTRIBUTE_ID_FIELD'
+    ATTRIBUTED_LAYER = 'ATTRIBUTED_LAYER'
+    ATTRIBUTE_FIELDS = 'ATTRIBUTE_FIELDS'
+    FIELDS_TO_COPY = 'FIELDS_TO_COPY'
+    OUTPUT = 'OUTPUT'
+
+    def initAlgorithm(self, config):
+
+        # Input line layer
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.ATTRIBUTES_LAYER,
+                self.tr('Layer with Attributes'),
+                [QgsProcessing.TypeVector]
+            )
+        )
+
+        # Field to use as ID (e.g. name, corridor ID, pipe ID, etc)
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.ATTRIBUTE_ID_FIELD,
+                self.tr('Attribute Layer ID Field'),
+                parentLayerParameterName=self.ATTRIBUTES_LAYER,
+                type=QgsProcessingParameterField.Any
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.FIELDS_TO_COPY,
+                self.tr('Attribute Fields to Copy'),
+                parentLayerParameterName=self.ATTRIBUTES_LAYER,
+                type=QgsProcessingParameterField.Any,
+                allowMultiple=True
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterFeatureSource(
+                self.ATTRIBUTED_LAYER,
+                self.tr('Layer to Add Attributes To'),
+                [QgsProcessing.TypeVector]
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterField(
+                self.ATTRIBUTE_FIELDS,
+                self.tr('Fields Containing Attributes'),
+                parentLayerParameterName=self.ATTRIBUTED_LAYER,
+                type=QgsProcessingParameterField.Any,
+                allowMultiple=True
+            )
+        )
+
+        # Output
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT,
+                self.tr('Layer With Attributes Added')
+            )
+        )
+
+    ATTRIBUTES_LAYER = 'ATTRIBUTES_LAYER'
+    ATTRIBUTE_ID_FIELD = 'ATTRIBUTE_ID_FIELD'
+    ATTRIBUTED_LAYER = 'ATTRIBUTED_LAYER'
+    ATTRIBUTE_FIELDS = 'ATTRIBUTE_FIELDS'
+    FIELDS_TO_COPY = 'FIELDS_TO_COPY'
+    OUTPUT = 'OUTPUT'
+
+
+    def processAlgorithm(self, parameters, context, feedback):
+
+        # Retrieve layer source
+        source_one = self.parameterAsSource(parameters, self.ATTRIBUTES_LAYER, context)
+        source_two = self.parameterAsSource(parameters, self.ATTRIBUTED_LAYER, context)
+
+        attribute_layer = source_one.materialize(QgsFeatureRequest())
+        layer_to_be_attributed = source_two.materialize(QgsFeatureRequest())
+
+        # Retrieve ID field selected by user
+        attribute_layer_field = self.parameterAsString(parameters, self.ATTRIBUTE_ID_FIELD, context)
+        fields_containing_attributes = self.parameterAsFields(parameters, self.ATTRIBUTE_FIELDS, context)
+        attributes_to_copy = self.parameterAsFields(parameters, self.FIELDS_TO_COPY, context)
+
+
+        #feedback.pushInfo(f"Using ID field: {id_field}")
+
+        # Run your tee junction pipeline
+        result_layer = attach_layer_attributes(attribute_layer,attribute_layer_field,layer_to_be_attributed,fields_containing_attributes,attributes_to_copy)
+
+        # Create sink with the fields, geometry type and CRS of the output layer
+        sink, dest_id = self.parameterAsSink(
+            parameters,
+            self.OUTPUT,
+            context,
+            result_layer.fields(),
+            result_layer.wkbType(),
+            result_layer.sourceCrs()
+        )
+
+        # Add resulting features to sink
+        for f in result_layer.getFeatures():
+            if feedback.isCanceled():
+                break
+            sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+        return {self.OUTPUT: dest_id}
+
+    def name(self):
+        return 'add_attributes_to_layer'
+
+    def displayName(self):
+        return self.tr('Add Attributes to Layer')
+
+    def group(self):
+        return self.tr(self.groupId())
+
+    def tr(self, string):
+        return QCoreApplication.translate('Processing', string)
+
+    def shortHelpString(self):
+        return self.tr("""
+    Indentifies all four-way unions within a line layer.
+    
+    ID expression of unions can be modified to better suit user's needs.
+    """)
+
+    def createInstance(self):
+        return JoinAttributesAlgorithm()
+
+
+try:
+    from scipy.signal import find_peaks as fp
+    import scipy.signal as s
+    import pandas as pd
+
+    class VentsDrainsAlgorithm(QgsProcessingAlgorithm):
+
+        INPUT = 'INPUT'
+        OUTPUT = 'OUTPUT'
+        ID_FIELD = 'ID_FIELD'
+        CHAINAGE = 'CHAINAGE'
+        DEM = 'DEM'
+        ELEV_OFFSET_LOWER = 'ELEV_OFFSET_LOWER'
+        ELEV_OFFSET_UPPER = 'ELEV_OFFSET_UPPER'
+        VENT_DELTA_TRIGGER = 'VENT_DELTA_TRIGGER'
+        DRAIN_DELTA_TRIGGER = 'DRAIN_DELTA_TRIGGER'
+
+        def initAlgorithm(self, config):
+
+            # Input line layer
+            self.addParameter(
+                QgsProcessingParameterFeatureSource(
+                    self.INPUT,
+                    self.tr('Input layer'),
+                    [QgsProcessing.TypeVectorLine]
+                )
+            )
+
+            # Field to use as ID (e.g. name, corridor ID, pipe ID, etc)
+            self.addParameter(
+                QgsProcessingParameterField(
+                    self.ID_FIELD,
+                    self.tr('ID field'),
+                    parentLayerParameterName=self.INPUT,
+                    type=QgsProcessingParameterField.Any
+                )
+            )
+
+            self.addParameter(
+                QgsProcessingParameterRasterLayer(
+                    self.DEM,
+                    self.tr('Select DEM Layer')
+                )
+            )
+            
+            self.addParameter(QgsProcessingParameterNumber(
+                self.CHAINAGE, 'XYZ Chainage',
+                type=QgsProcessingParameterNumber.Double,
+                minValue=0, maxValue=1e5, defaultValue=20
+            ))
+            
+            
+            self.addParameter(QgsProcessingParameterNumber(
+                self.VENT_DELTA_TRIGGER, 'Change in Elevation that Triggers a Vent',
+                type=QgsProcessingParameterNumber.Integer,
+                minValue=0, maxValue=1e5, defaultValue=2
+            ))
+            
+            self.addParameter(QgsProcessingParameterNumber(
+                self.ELEV_OFFSET_LOWER, 'Vent Minimum Elevation Offset',
+                type=QgsProcessingParameterNumber.Double,
+                minValue=0, maxValue=1e5, defaultValue=0.3
+            ))
+            
+            self.addParameter(QgsProcessingParameterNumber(
+                self.ELEV_OFFSET_UPPER, 'Vent Maximum Elevation Offset',
+                type=QgsProcessingParameterNumber.Double,
+                minValue=0, maxValue=1e5, defaultValue=1
+            ))
+            
+            self.addParameter(QgsProcessingParameterNumber(
+                self.DRAIN_DELTA_TRIGGER, 'Change in Elevation that Triggers a Drain',
+                type=QgsProcessingParameterNumber.Integer,
+                minValue=0, maxValue=1e5, defaultValue=2
+            ))
+
+            # Output
+            self.addParameter(
+                QgsProcessingParameterFeatureSink(
+                    self.OUTPUT,
+                    self.tr('Vents and Drains')
+                )
+            )
+
+        def processAlgorithm(self, parameters, context, feedback):
+
+            # Retrieve layer source
+            source = self.parameterAsSource(parameters, self.INPUT, context)
+
+            # Convert to a materialised QgsVectorLayer (so it can be processed normally)
+            layer = source.materialize(QgsFeatureRequest())
+
+            # Retrieve ID field selected by user
+            id_field = self.parameterAsString(parameters, self.ID_FIELD, context)
+            chainage = self.parameterAsDouble(parameters, self.CHAINAGE, context)
+            dem = self.parameterAsRasterLayer(parameters, self.DEM, context) 
+            vent_delta_trigger = self.parameterAsInt(parameters, self.VENT_DELTA_TRIGGER, context)
+            elev_offset_lower = self.parameterAsDouble(parameters, self.ELEV_OFFSET_LOWER, context)
+            elev_offset_upper = self.parameterAsDouble(parameters, self.ELEV_OFFSET_UPPER, context)
+            drain_delta_trigger = self.parameterAsInt(parameters, self.DRAIN_DELTA_TRIGGER, context)
+
+            feedback.pushInfo(f"Using ID field: {id_field}")
+
+            # Run your tee junction pipeline
+            result_layer = vent_drain_placer(line_layer=layer,
+                                             id_field=id_field,
+                                             chainage=chainage,
+                                             dem=dem,
+                                             elev_offset_lower=elev_offset_lower,
+                                             elev_offset_upper=elev_offset_upper,
+                                             vent_delta_trigger=vent_delta_trigger,
+                                             drain_delta_trigger=drain_delta_trigger)
+
+            # Create sink with the fields, geometry type and CRS of the output layer
+            sink, dest_id = self.parameterAsSink(
+                parameters,
+                self.OUTPUT,
+                context,
+                result_layer.fields(),
+                result_layer.wkbType(),
+                result_layer.sourceCrs()
+            )
+
+            # Add resulting features to sink
+            for f in result_layer.getFeatures():
+                if feedback.isCanceled():
+                    break
+                sink.addFeature(f, QgsFeatureSink.FastInsert)
+
+            return {self.OUTPUT: dest_id}
+
+        def name(self):
+            return 'vents_and_drains'
+
+        def displayName(self):
+            return self.tr('Vents and Drains')
+
+        def group(self):
+            return self.tr(self.groupId())
+
+        def tr(self, string):
+            return QCoreApplication.translate('Processing', string)
+
+        def shortHelpString(self):
+            return self.tr("""
+        Identifies potential vent and drain locations for a network based on topography.
+        
+        User can identify how far off the peak the vent is to be placed downstream (Vent Minimum and Maximum Elevation Offsets).
+        
+        Works best when trunks are dissolved into one continuous layer.
+        
+        """)
+
+        def createInstance(self):
+            return VentsDrainsAlgorithm()
+    
+except:
+    pass

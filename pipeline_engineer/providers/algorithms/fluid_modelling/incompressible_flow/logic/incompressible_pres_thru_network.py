@@ -62,7 +62,7 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_to = max(p_from - loss*multiplier,vapour_pres)
+            p_to = max(p_from - loss*multiplier,vapour_pres*multiplier)
 
             line_mesh_df.loc[i, 'p_to_bar'] = p_to
 
@@ -94,7 +94,7 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_from = max(p_to + loss*multiplier,vapour_pres)
+            p_from = max(p_to + loss*multiplier,vapour_pres*multiplier)
 
             line_mesh_df.loc[i, 'p_from_bar'] = p_from
 

@@ -66,6 +66,11 @@ class materialTakeOffProvider(QgsProcessingProvider):
         self.addAlgorithm(TeeJunctionsAlgorithm())
         self.addAlgorithm(BendsAlgorithm())
         self.addAlgorithm(FourWayUnionsAlgorithm())
+        self.addAlgorithm(JoinAttributesAlgorithm())
+        try:
+            self.addAlgorithm(VentsDrainsAlgorithm())
+        except:
+            pass
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

@@ -56,7 +56,7 @@ from qgis.PyQt.QtGui import QIcon
 
 from .logic.running_pipeflow import *
 
-class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
+class PipeFlowAlgorithm(QgsProcessingAlgorithm):
 
     INPUT = 'INPUT'
     CHECK_SELECTED = 'CHECK_SELECTED'
@@ -317,7 +317,7 @@ class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
         return 'pandapipes_pipeflow'
 
     def displayName(self):
-        return self.tr('Run Pipeflow')
+        return self.tr('Pipeflow')
 
     def group(self):
         return self.tr(self.groupId())
@@ -329,4 +329,4 @@ class runPipeFlowAlgorithm(QgsProcessingAlgorithm):
         return self.tr("Runs a pandapipes pipeflow for selected layers.")
 
     def createInstance(self):
-        return runPipeFlowAlgorithm()
+        return PipeFlowAlgorithm()

@@ -1,7 +1,6 @@
 import os
 import processing
 
-import pandas as pd
 
 from qgis.core import QgsProject, QgsVectorLayer, QgsMapLayer
 
