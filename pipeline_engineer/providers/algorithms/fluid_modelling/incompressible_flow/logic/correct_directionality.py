@@ -168,11 +168,17 @@ def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layer
                                             'FORMULA':'round("distance",0)',
                                             'OUTPUT':'memory:'})['OUTPUT']
 
-    geom_data_added = processing.run("native:exportaddgeometrycolumns", 
+    try:
+        geom_data_added = processing.run("native:exportaddgeometrycolumns", 
                                             {'INPUT':chainage_calculated,
                                              'METHOD':1, # Project CRS
                                              'OUTPUT':'memory:'})['OUTPUT']
-
+    except:
+        geom_data_added = processing.run("qgis:exportaddgeometrycolumns", 
+                                            {'INPUT':chainage_calculated,
+                                             'METHOD':1, # Project CRS
+                                             'OUTPUT':'memory:'})['OUTPUT']
+        
     raster_sampling = processing.run("native:rastersampling", 
                                         {'INPUT':geom_data_added,
                                         'RASTERCOPY':raster_layer,

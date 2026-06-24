@@ -22,6 +22,7 @@ def incompressible_flow(layers,args,
     for layer in layers:
         
         layer_name = layer.name().lower()
+        crs = layer.crs()
         
         if "(two-phase flow)" not in layer_name:
             layers_for_pipeflow.append(layer)
@@ -164,7 +165,6 @@ def incompressible_flow(layers,args,
             layer.selectAll()
             
             # Create output line layer (same CRS as input)
-            crs = layer.crs()
             line_layer = QgsVectorLayer(f"LineString?crs={crs.authid()}", "Pressure Drop By Section", "memory")
             provider = line_layer.dataProvider()
 

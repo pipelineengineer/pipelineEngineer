@@ -93,6 +93,10 @@ class PipelineEngineer:
         self.net_provider = NetworkCleanupProvider()
         self.mto_provider = materialTakeOffProvider()
         
+        try:
+            self.assy_dlg = AssemblyManagerDialog()
+        except:
+            pass
         
         try:
             self.fluid_dlg = FluidsDialog()
@@ -331,12 +335,12 @@ class PipelineEngineer:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.network_dlg = AssemblyManagerDialog()
+            self.assy_dlg = AssemblyManagerDialog()
 
         # show the dialog
-        self.network_dlg.show()
+        self.assy_dlg.show()
         # Run the dialog event loop
-        result = self.network_dlg.exec_()
+        result = self.assy_dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and

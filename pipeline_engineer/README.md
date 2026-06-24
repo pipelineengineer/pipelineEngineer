@@ -1,15 +1,13 @@
 # Pipeline Engineer ![image](ADD AN IMAGE)
 
 This plugin streamlines the design process of pipeline systems.
-
 Current features include:-
+Network Cleanup - Tools to check network topology
 
-	- Network Cleanup - Tools to check network topology (flags points where the network may look connected, but really isn't)
-	- Fluid Modelling - Currently supports single-phase and two-phase models of pipe networks. User can input fluid properties
-						of fluids currently not in library (note - user added fluids properties will not change with pressure and temperature
-						as with fluids available by default).
-	- Bill of Material Generation - Allows users to quickly generate material lists from GIS layers - can identify tees, bends and unions -
-									able to assign fittings for point layers also.
+Fluid Modelling - Abstract functioning hydraulic models of compressible or incompressible media directly from GIS layers
+
+Bill of Material Generation - Identify features (e.g. tees and bends) and assign fittings within QGIS
+
 
 **Author:** Thomas Raj
 

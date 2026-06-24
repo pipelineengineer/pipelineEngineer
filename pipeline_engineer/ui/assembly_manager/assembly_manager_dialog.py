@@ -147,9 +147,15 @@ class AssemblyManagerDialog(QDialog, FORM_CLASS):
             
             layer = self.mlcbFeatureLayer.currentLayer()
             
-            geom_added = processing.run("native:exportaddgeometrycolumns", 
+            try:
+                geom_added = processing.run("native:exportaddgeometrycolumns", 
                                                     {'INPUT':layer,
-                                                     'METHOD':1,
+                                                     'METHOD':1, # Project CRS
+                                                     'OUTPUT':'memory:'})['OUTPUT']
+            except:
+                geom_added = processing.run("qgis:exportaddgeometrycolumns", 
+                                                    {'INPUT':layer,
+                                                     'METHOD':1, # Project CRS
                                                      'OUTPUT':'memory:'})['OUTPUT']
             
             fittings_df = layer_to_df(layer=geom_added)
