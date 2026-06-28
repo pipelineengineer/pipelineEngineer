@@ -147,7 +147,7 @@ class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
         ))
         
         self.addParameter(QgsProcessingParameterNumber(
-            self.PRES_MULTIPLIER, 'Pressure Multiplier (Multiplies Calculated Pressure Loss by a Factor): ',
+            self.PRES_MULTIPLIER, 'Friction Multiplier: ',
             type=QgsProcessingParameterNumber.Double,
             minValue=-100000, maxValue=100000, defaultValue=1
         ))

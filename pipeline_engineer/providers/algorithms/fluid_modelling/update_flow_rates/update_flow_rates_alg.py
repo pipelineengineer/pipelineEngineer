@@ -65,8 +65,6 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
     AMBIENT_PRES = 'AMBIENT_PRES'
     ID_FIELD = 'ID_FIELD'
     DATA_ID_FIELD = 'DATA_ID_FIELD'
-    SCENARIO_FIELD = 'SCENARIO_FIELD'
-    SCENARIO = 'SCENARIO'
     DAT_FLOW_FIELD = 'DAT_FLOW_FIELD'
     FLOW_RATE_FIELD = 'FLOW_RATE_FIELD'
     MASS_FLOW_RATE = 'MASS_FLOW_RATE'
@@ -165,21 +163,6 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
         
         self.addParameter(
             QgsProcessingParameterField(
-                self.SCENARIO_FIELD,
-                self.tr('Scenario Field'),
-                parentLayerParameterName=self.FLOW_RATE_DATA,
-                type=QgsProcessingParameterField.Any
-            )
-        )
-
-        self.addParameter(QgsProcessingParameterNumber(
-            self.SCENARIO, 'Scenario',
-            type=QgsProcessingParameterNumber.Integer,
-            minValue=0, maxValue=100000, defaultValue=1
-        ))
-
-        self.addParameter(
-            QgsProcessingParameterField(
                 self.DAT_FLOW_FIELD,
                 self.tr('Flow Rate Field'),
                 parentLayerParameterName=self.FLOW_RATE_DATA,
@@ -230,7 +213,6 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
         
         id_field = self.parameterAsString(parameters, self.ID_FIELD, context)
         flow_rate_field = self.parameterAsString(parameters, self.FLOW_RATE_FIELD, context)
-        scenario = self.parameterAsInt(parameters, self.SCENARIO, context)
         
         fluid_index = self.parameterAsInt(parameters, self.FLUID, context)
         ambient_temp = self.parameterAsDouble(parameters, self.AMBIENT_TEMP, context)
@@ -238,7 +220,6 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
         
         data = self.parameterAsVectorLayer(parameters, self.FLOW_RATE_DATA, context)
         data_id_field = self.parameterAsString(parameters, self.DATA_ID_FIELD, context)
-        scenario_field = self.parameterAsString(parameters, self.SCENARIO_FIELD, context)
         data_flow_field = self.parameterAsString(parameters, self.DAT_FLOW_FIELD, context)
         
         mass_flow_rate = self.parameterAsBool(parameters, self.MASS_FLOW_RATE, context)
@@ -301,22 +282,18 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
             
         
         if mass_flow_rate:
-            formula = f'"{data_flow_field}" * {volume_conversion_factor} * {time_conversion_factor} * {fluid_density}'
+            
+            formula = f'CASE\r\nWHEN "{data_flow_field}" IS NULL THEN 0\r\nELSE "{data_flow_field}" * {volume_conversion_factor} * {time_conversion_factor}\r\nEND'
             
         else:
-            formula = f'"{data_flow_field}" * {volume_conversion_factor} * {time_conversion_factor}'
-        
+            formula = f'CASE\r\nWHEN "{data_flow_field}" IS NULL THEN 0\r\nELSE "{data_flow_field}" * {volume_conversion_factor} * {time_conversion_factor} * {fluid_density}\r\nEND'
+            
         # Run your solver
         feedback.pushInfo("Updating flow units…")
         
-        expression_extract = processing.run("native:extractbyexpression", 
-                                                    {'INPUT':data,
-                                                     'EXPRESSION':f'"{scenario_field}" = {scenario}',
-                                                     'OUTPUT':'memory:'})['OUTPUT']
-        
         field_calc = processing.run("native:fieldcalculator", 
-                                                    {'INPUT':expression_extract,
-                                                     'FIELD_NAME':f'{flow_rate_field}',
+                                                    {'INPUT':data,
+                                                     'FIELD_NAME':f'{flow_rate_field}_2',
                                                      'FIELD_TYPE':0,
                                                      'FIELD_LENGTH':0,
                                                      'FIELD_PRECISION':0,
@@ -333,26 +310,41 @@ class updateFlowRatesAlgorithm(QgsProcessingAlgorithm):
                                                      'FIELD':id_field,
                                                      'INPUT_2':field_calc,
                                                      'FIELD_2':data_id_field,
-                                                     'FIELDS_TO_COPY':[flow_rate_field],
+                                                     'FIELDS_TO_COPY':f'{flow_rate_field}_2',
                                                      'METHOD':1,
                                                      'DISCARD_NONMATCHING':False,
                                                      'PREFIX':'',
                                                      'OUTPUT':'memory:'})['OUTPUT']
 
-        field_value.setName(f'Scenario {scenario} {layer_name}')
+
+        field_calc_again = processing.run("native:fieldcalculator", 
+                                                    {'INPUT':field_value,
+                                                     'FIELD_NAME':f'{flow_rate_field}',
+                                                     'FIELD_TYPE':0,
+                                                     'FIELD_LENGTH':0,
+                                                     'FIELD_PRECISION':0,
+                                                     'FORMULA':f'CASE\r\nWHEN "{flow_rate_field}_2" IS NULL THEN 0\r\nELSE "{flow_rate_field}_2"\r\nEND',
+                                                     'OUTPUT':'memory:'})['OUTPUT']
+
+        dropped_again = processing.run("native:deletecolumn", 
+                                                    {'INPUT':field_calc_again,
+                                                     'COLUMN':[f"{flow_rate_field}_2"],
+                                                     'OUTPUT':'memory:'})['OUTPUT']
+
+        dropped_again.setName(f'{layer_name} Flow Rates Updated')
 
         # Create sink with the fields, geometry type and CRS of the output layer
         sink, dest_id = self.parameterAsSink(
             parameters,
             self.OUTPUT,
             context,
-            field_value.fields(),
-            field_value.wkbType(),
-            field_value.sourceCrs()
+            dropped_again.fields(),
+            dropped_again.wkbType(),
+            dropped_again.sourceCrs()
         )
 
         # Add resulting features to sink
-        for f in field_value.getFeatures():
+        for f in dropped_again.getFeatures():
             if feedback.isCanceled():
                 break
             sink.addFeature(f, QgsFeatureSink.FastInsert)

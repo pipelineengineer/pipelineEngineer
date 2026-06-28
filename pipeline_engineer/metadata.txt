@@ -6,11 +6,11 @@
 name=Pipeline Engineer
 qgisMinimumVersion=3.0
 description=A pipe network modelling and BOM generation tool for compressible and incompressible flow.
-version=0.5
+version=0.6.1
 author=Thomas Raj
 email=lemungineer@gmail.com
 
-about=A pipe network modelling and BOM generation tool for compressible and incompressible flow.
+about=Abstracts hydraulic models and material lists directly from map layers. Offers tools for validating network topography.
 
 tracker=https://github.com/pipelineengineer/pipelineEngineer/issues
 repository=https://github.com/pipelineengineer/pipelineEngineer
@@ -27,7 +27,7 @@ tags=python,pipeline,pipe_network,network_modelling,compressible_flow,incompress
 
 homepage=https://pipelineengineer.github.io/
 category=Plugins
-icon=icon.png
+icon=icon.svg
 # experimental flag
 experimental=False
 

@@ -23,6 +23,8 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
 
     area = math.pi*((internal_diameter/2)**2)
     velocity = vol_flow_rate / area
+    re_d = (velocity * liquid_density * internal_diameter) / (liquid_viscosity)
+    friction_factor = calculate_friction_factor(re_d=re_d,line_roughness_m=roughness,internal_diameter=internal_diameter)
 
     line_mesh_df = line_xyz_df.copy()
     line_mesh_df = line_mesh_df.sort_values('chainage_m')
@@ -31,6 +33,14 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
     line_mesh_df['end_ycoord'] = (line_mesh_df['ycoord'].shift(-1))
     line_mesh_df['section_length_m'] = (line_mesh_df['chainage_m'].shift(-1) - line_mesh_df['chainage_m'])
     line_mesh_df['section_elev_m'] = (line_mesh_df['elev1'].shift(-1) - line_mesh_df['elev1'])
+    
+    line_mesh_df['density'] = liquid_density
+    line_mesh_df['velocity'] = velocity
+    line_mesh_df['re_d'] = re_d
+    line_mesh_df['friction_factor'] = friction_factor
+    line_mesh_df['friction_loss'] = (((line_mesh_df['friction_factor'] * multiplier * (line_mesh_df['velocity'] ** 2) * liquid_density) / (2 * internal_diameter)) * line_mesh_df['section_length_m']) / 100000
+    line_mesh_df['elev_loss'] = (liquid_density * 9.81 * line_mesh_df['section_elev_m'])/100000
+    line_mesh_df['total_loss_bar'] = line_mesh_df['friction_loss'] + line_mesh_df['elev_loss']
     
     line_mesh_df = line_mesh_df.iloc[:-1]
     
@@ -52,17 +62,10 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
         for i in range(len(line_mesh_df)):
 
             p_from = line_mesh_df.loc[i, 'p_from_bar']
-            line_mesh_df.loc[i,'liquid_density'] = liquid_density
-            line_mesh_df.loc[i,'liquid_velocity'] = liquid_flow_rate / area
-            line_mesh_df.loc[i,'re_l'] = (line_mesh_df.loc[i,'liquid_velocity'] * liquid_density * internal_diameter) / (liquid_viscosity)
-            line_mesh_df.loc[i,'liquid_friction_factor'] = calculate_friction_factor(re_d=line_mesh_df.loc[i,'re_l'],line_roughness_m=roughness,internal_diameter=internal_diameter)
-            line_mesh_df.loc[i,'liquid_friction_loss'] = (((line_mesh_df.loc[i,'liquid_friction_factor'] * (line_mesh_df.loc[i,'liquid_velocity'] ** 2) * liquid_density) / (2 * internal_diameter)) * line_mesh_df.loc[i,'section_length_m']) / 100000
-            line_mesh_df.loc[i,'liquid_elev_loss'] = (liquid_density * 9.81 * line_mesh_df.loc[i,'section_elev_m'])/100000
-            line_mesh_df.loc[i,'total_loss_bar'] = line_mesh_df.loc[i,'liquid_friction_loss'] + line_mesh_df.loc[i,'liquid_elev_loss']
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_to = max(p_from - loss*multiplier,vapour_pres*multiplier)
+            p_to = max(p_from - loss,vapour_pres*multiplier)
 
             line_mesh_df.loc[i, 'p_to_bar'] = p_to
 
@@ -83,18 +86,10 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
         for i in range(len(line_mesh_df)):
 
             p_to = line_mesh_df.loc[i, 'p_to_bar']
-            line_mesh_df.loc[i,'liquid_density'] = liquid_density
-            line_mesh_df.loc[i,'liquid_velocity'] = liquid_flow_rate / area
-            line_mesh_df.loc[i,'re_l'] = (line_mesh_df.loc[i,'liquid_velocity'] * liquid_density * internal_diameter) / (liquid_viscosity)
-            line_mesh_df.loc[i,'liquid_friction_factor'] = calculate_friction_factor(re_d=line_mesh_df.loc[i,'re_l'],line_roughness_m=roughness,internal_diameter=internal_diameter)
-            line_mesh_df.loc[i,'liquid_friction_loss'] = (((line_mesh_df.loc[i,'liquid_friction_factor'] * (line_mesh_df.loc[i,'liquid_velocity'] ** 2) * liquid_density) / (2 * internal_diameter)) * line_mesh_df.loc[i,'section_length_m']) / 100000
-            line_mesh_df.loc[i,'liquid_elev_loss'] = (liquid_density * 9.81 * line_mesh_df.loc[i,'section_elev_m'])/100000
-
-            line_mesh_df.loc[i,'total_loss_bar'] = line_mesh_df.loc[i,'liquid_friction_loss'] + line_mesh_df.loc[i,'liquid_elev_loss']
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_from = max(p_to + loss*multiplier,vapour_pres*multiplier)
+            p_from = max(p_to + loss,vapour_pres*multiplier)
 
             line_mesh_df.loc[i, 'p_from_bar'] = p_from
 

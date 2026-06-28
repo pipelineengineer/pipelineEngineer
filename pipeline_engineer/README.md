@@ -8,7 +8,7 @@ Fluid Modelling - Abstract functioning hydraulic models of compressible or incom
 
 Bill of Material Generation - Identify features (e.g. tees and bends) and assign fittings within QGIS
 
-
+-
 **Author:** Thomas Raj
 
 **Current mantainer:** Thomas Raj

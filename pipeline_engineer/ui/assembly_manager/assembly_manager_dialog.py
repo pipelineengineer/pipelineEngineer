@@ -150,27 +150,24 @@ class AssemblyManagerDialog(QDialog, FORM_CLASS):
             try:
                 geom_added = processing.run("native:exportaddgeometrycolumns", 
                                                     {'INPUT':layer,
-                                                     'METHOD':1, # Project CRS
+                                                     'METHOD':0, # Layer CRS
                                                      'OUTPUT':'memory:'})['OUTPUT']
             except:
                 geom_added = processing.run("qgis:exportaddgeometrycolumns", 
                                                     {'INPUT':layer,
-                                                     'METHOD':1, # Project CRS
+                                                     'METHOD':0, # Layer CRS
                                                      'OUTPUT':'memory:'})['OUTPUT']
             
             fittings_df = layer_to_df(layer=geom_added)
             
-            fittings_df.to_clipboard()
+            parameter_df = pd.read_excel(path,sheet_name=parameter_sheet)
             
-            fittings_df['max_header_size'] = fittings_df[["header_1_size", "header_2_size"]].max(axis=1)
-            fittings_df['min_header_size'] = fittings_df[["header_1_size", "header_2_size"]].min(axis=1)
-            fittings_df['max_sdr'] = fittings_df[["header_1_sdr", "header_2_sdr","branch_sdr"]].max(axis=1)
-            fittings_df['min_sdr'] = fittings_df[["header_1_sdr", "header_2_sdr","branch_sdr"]].min(axis=1)
-            fittings_df['mode_sdr'] = fittings_df[["header_1_sdr", "header_2_sdr","branch_sdr"]].mode(axis=1)
+            parameters = parameter_df['parameter'].tolist()
+            fittings_df = add_max_min_mode(df=fittings_df,parameters=parameters)
             
             assembly_list_df = pd.read_excel(path,sheet_name=assembly_sheet)
             filters_df = pd.read_excel(path,sheet_name=filter_sheet)
-            parameter_df = pd.read_excel(path,sheet_name=parameter_sheet)
+            
             features = parameter_df['parameter'].tolist()
             
             mto_df = return_mto(project_data_df=fittings_df,assembly_field=assembly_field,assembly_list_df=assembly_list_df,filters_df=filters_df,features=features)
@@ -178,11 +175,11 @@ class AssemblyManagerDialog(QDialog, FORM_CLASS):
             script_dir = os.path.dirname(os.path.abspath(__file__))
             df_save_path = os.path.join(script_dir,'working','fitting_list.csv')
             
-            mto_df.to_csv(df_save_path,index=True)
+            mto_df.to_csv(df_save_path,index=False)
             
-            project_crs = QgsProject.instance().crs()
+            layer_crs = layer.crs()
             
-            uri = (f"file:///{df_save_path}""?delimiter=,&xField=xcoord&yField=ycoord"f"&crs={project_crs.authid()}")
+            uri = (f"file:///{df_save_path}""?delimiter=,&xField=xcoord&yField=ycoord"f"&crs={layer_crs.authid()}")
 
             fitting_layer = QgsVectorLayer(uri, 'Fittings','delimitedtext')
             
