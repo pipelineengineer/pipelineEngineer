@@ -96,6 +96,8 @@ class AssemblyManagerDialog(QDialog, FORM_CLASS):
         path = self.fwAssemblyList.filePath()
         
         self.cmbAssemblyListSheet.clear()
+        self.cmbFilters.clear()
+        self.cmbParameterList.clear()
 
         if not path:
             return

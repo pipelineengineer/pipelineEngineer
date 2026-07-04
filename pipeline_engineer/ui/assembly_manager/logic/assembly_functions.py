@@ -37,32 +37,47 @@ def add_max_min_mode(df,parameters):
 
     return df
 
+def format_value(x):
+    if pd.isna(x):
+        return None
+
+    # If it's a float with no fractional part, convert to int first
+    if isinstance(x, float) and x.is_integer():
+        return str(int(x))
+
+    return str(x)
+
 def return_mto(project_data_df,assembly_field,assembly_list_df,filters_df,features):
 
     merged_df = project_data_df.merge(assembly_list_df,left_on=assembly_field,right_on='assembly')
+
+    used_features = []
 
     for feature in features:
         try:
             merged_df[f'{feature}_a'] = merged_df.apply(lambda row: row[f'{feature}_a'] if pd.notna(row[f'{feature}_a']) and isinstance(row[f'{feature}_a'], (int, float))else (row[row[f'{feature}_a']] if pd.notna(row[f'{feature}_a']) else None),axis=1)
             merged_df[f"{feature}_a"] = merged_df[f"{feature}_a"].clip(merged_df[f"{feature}_a_floor"],merged_df[f"{feature}_a_ceil"])
+            used_features.append(f"{feature}_a")
+            
         except:
             continue
          
         try:
             merged_df[f'{feature}_b'] = merged_df.apply(lambda row: row[f'{feature}_b'] if pd.notna(row[f'{feature}_b']) and isinstance(row[f'{feature}_b'], (int, float))else (row[row[f'{feature}_b']] if pd.notna(row[f'{feature}_b']) else None),axis=1)
             merged_df[f"{feature}_b"] = merged_df[f"{feature}_b"].clip(merged_df[f"{feature}_b_floor"],merged_df[f"{feature}_b_ceil"])
+            used_features.append(f"{feature}_b")
         except:
             continue
             
         try:
             merged_df[f'{feature}_c'] = merged_df.apply(lambda row: row[f'{feature}_c'] if pd.notna(row[f'{feature}_c']) and isinstance(row[f'{feature}_c'], (int, float))else (row[row[f'{feature}_c']] if pd.notna(row[f'{feature}_c']) else None),axis=1)
             merged_df[f"{feature}_c"] = merged_df[f"{feature}_c"].clip(merged_df[f"{feature}_c_floor"],merged_df[f"{feature}_c_ceil"])
+            used_features.append(f"{feature}_c")
         except:
             pass
         
     merged_df = merged_df.drop(columns=[c for c in merged_df.columns if "floor" in c or "ceil" in c])
-
-        
+    
     ops = {
         "Equal": operator.eq,
         "Greater Than or Equal To": operator.ge,
@@ -88,5 +103,27 @@ def return_mto(project_data_df,assembly_field,assembly_list_df,filters_df,featur
     merged_df = merged_df[~merged_df["rule_met"]]
     merged_df = merged_df.drop(columns='rule_met')
     merged_df = merged_df.reset_index(drop=True)
+
+    cols_to_remove = []
+
+    for feature in features:
+        
+        try:
+            merged_df = merged_df.drop(columns=[f'max_{feature}'],axis=1)
+        except:
+            pass
+        try:
+            merged_df = merged_df.drop(columns=[f'min_{feature}'],axis=1)
+        except:
+            pass
+        try:
+            merged_df = merged_df.drop(columns=[f'mode_{feature}'],axis=1)
+        except:
+            pass
+        
+        feature_entries = [s for s in used_features if feature in s]
+
+        if feature_entries:
+            merged_df[f'item_{feature}'] = (merged_df[feature_entries].apply(lambda row: "x".join(v for x in row if (v := format_value(x)) is not None), axis=1))
 
     return merged_df

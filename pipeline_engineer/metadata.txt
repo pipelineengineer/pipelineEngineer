@@ -6,7 +6,7 @@
 name=Pipeline Engineer
 qgisMinimumVersion=3.0
 description=A pipe network modelling and BOM generation tool for compressible and incompressible flow.
-version=0.6.1
+version=0.6.2
 author=Thomas Raj
 email=lemungineer@gmail.com
 
