@@ -38,9 +38,9 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
     line_mesh_df['velocity'] = velocity
     line_mesh_df['re_d'] = re_d
     line_mesh_df['friction_factor'] = friction_factor
-    line_mesh_df['friction_loss'] = (((line_mesh_df['friction_factor'] * multiplier * (line_mesh_df['velocity'] ** 2) * liquid_density) / (2 * internal_diameter)) * line_mesh_df['section_length_m']) / 100000
+    line_mesh_df['friction_loss'] = (((line_mesh_df['friction_factor'] * (line_mesh_df['velocity'] ** 2) * liquid_density) / (2 * internal_diameter)) * line_mesh_df['section_length_m']) / 100000
     line_mesh_df['elev_loss'] = (liquid_density * 9.81 * line_mesh_df['section_elev_m'])/100000
-    line_mesh_df['total_loss_bar'] = line_mesh_df['friction_loss'] + line_mesh_df['elev_loss']
+    line_mesh_df['total_loss_bar'] = (line_mesh_df['friction_loss'] + line_mesh_df['elev_loss'])  * multiplier
     
     line_mesh_df = line_mesh_df.iloc[:-1]
     
