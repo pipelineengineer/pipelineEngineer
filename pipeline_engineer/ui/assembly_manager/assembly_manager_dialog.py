@@ -175,7 +175,11 @@ class AssemblyManagerDialog(QDialog, FORM_CLASS):
             mto_df = return_mto(project_data_df=fittings_df,assembly_field=assembly_field,assembly_list_df=assembly_list_df,filters_df=filters_df,features=features)
             
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            df_save_path = os.path.join(script_dir,'working','fitting_list.csv')
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            working_folder = os.path.join(script_dir,'working')
+            os.makedirs(working_folder, exist_ok=True)
+            
+            df_save_path = os.path.join(working_folder,'fitting_list.csv')
             
             mto_df.to_csv(df_save_path,index=False)
             

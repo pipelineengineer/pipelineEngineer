@@ -6,6 +6,8 @@ from qgis.core import (QgsVectorLayer,QgsField,QgsFields,QgsFeature,QgsGeometry,
 import pandapipes
 import pandas as pd
 
+from pandapipes.properties.fluids import FluidPropertyConstant
+
 mapping = {
     "junction layer": ["junction", "res_junction", pandapipes.create_junction,'junction_results.qml'],
     "pipe layer": ["pipe", "res_pipe", pandapipes.create_pipe_from_parameters,'pipe_results.qml'],
@@ -235,6 +237,8 @@ def run_pipeflow(layers,
                                             viscosity=user_fluids_df.loc[user_fluids_df['name'] == fluid, "viscosity"].iloc[0],
                                             is_gas=user_fluids_df.loc[user_fluids_df['name'] == fluid, "is_gas"].iloc[0]
                                         )
+        
+        fluid.add_property("der_compressibility",FluidPropertyConstant(0.0))
     
     
     net = on_create_network_clicked(components=layers,selected_fluid=fluid)
