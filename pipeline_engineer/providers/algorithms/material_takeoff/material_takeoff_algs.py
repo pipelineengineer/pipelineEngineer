@@ -53,9 +53,14 @@ from .logic.four_way_unions import summarise_four_way_unions
 from .logic.attach_layer_attributes import attach_layer_attributes
 
 try:
+    from scipy.signal import find_peaks as fp
+    import scipy.signal as s
+    import pandas as pd
+
     from .logic.vents_drains import *
+    drains_avail = True
 except:
-    pass
+    drains_avail = False
 
 class TeeJunctionsAlgorithm(QgsProcessingAlgorithm):
 
@@ -521,12 +526,7 @@ class JoinAttributesAlgorithm(QgsProcessingAlgorithm):
     def createInstance(self):
         return JoinAttributesAlgorithm()
 
-
-try:
-    from scipy.signal import find_peaks as fp
-    import scipy.signal as s
-    import pandas as pd
-
+if drains_avail:
     class VentsDrainsAlgorithm(QgsProcessingAlgorithm):
 
         INPUT = 'INPUT'
@@ -678,5 +678,3 @@ try:
         def createInstance(self):
             return VentsDrainsAlgorithm()
     
-except:
-    pass

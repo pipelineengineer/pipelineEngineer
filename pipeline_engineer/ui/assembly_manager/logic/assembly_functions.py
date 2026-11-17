@@ -33,7 +33,7 @@ def add_max_min_mode(df,parameters):
         try:
             df[f'mode_{parameter}'] = (df[relevant_column_headers].mode(axis=1))
         except:
-            continue
+            df[f'mode_{parameter}'] = df[f'max_{parameter}']
 
     return df
 
@@ -60,21 +60,21 @@ def return_mto(project_data_df,assembly_field,assembly_list_df,filters_df,featur
             used_features.append(f"{feature}_a")
             
         except:
-            continue
+            print('no feature a found - moving on')
          
         try:
             merged_df[f'{feature}_b'] = merged_df.apply(lambda row: row[f'{feature}_b'] if pd.notna(row[f'{feature}_b']) and isinstance(row[f'{feature}_b'], (int, float))else (row[row[f'{feature}_b']] if pd.notna(row[f'{feature}_b']) else None),axis=1)
             merged_df[f"{feature}_b"] = merged_df[f"{feature}_b"].clip(merged_df[f"{feature}_b_floor"],merged_df[f"{feature}_b_ceil"])
             used_features.append(f"{feature}_b")
         except:
-            continue
+            print('no feature b found - moving on')
             
         try:
             merged_df[f'{feature}_c'] = merged_df.apply(lambda row: row[f'{feature}_c'] if pd.notna(row[f'{feature}_c']) and isinstance(row[f'{feature}_c'], (int, float))else (row[row[f'{feature}_c']] if pd.notna(row[f'{feature}_c']) else None),axis=1)
             merged_df[f"{feature}_c"] = merged_df[f"{feature}_c"].clip(merged_df[f"{feature}_c_floor"],merged_df[f"{feature}_c_ceil"])
             used_features.append(f"{feature}_c")
         except:
-            pass
+            print('no feature c found - moving on')
         
     merged_df = merged_df.drop(columns=[c for c in merged_df.columns if "floor" in c or "ceil" in c])
     
@@ -111,15 +111,15 @@ def return_mto(project_data_df,assembly_field,assembly_list_df,filters_df,featur
         try:
             merged_df = merged_df.drop(columns=[f'max_{feature}'],axis=1)
         except:
-            pass
+            print('No max found - moving on')
         try:
             merged_df = merged_df.drop(columns=[f'min_{feature}'],axis=1)
         except:
-            pass
+            print('No min found - moving on')
         try:
             merged_df = merged_df.drop(columns=[f'mode_{feature}'],axis=1)
         except:
-            pass
+            print('No mode found - moving on')
         
         feature_entries = [s for s in used_features if feature in s]
 

@@ -163,7 +163,11 @@ class FluidsDialog(QDialog, FORM_CLASS):
             model = TableModel(df)
             self.twFluidProperties.setModel(model)
         except:
-            pass
+            QMessageBox.warning(
+                window,
+                "Warning",
+                "Fluid is not selected"
+            )
         # Make columns stretch to fill the horizontal space
         self.twFluidProperties.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
     

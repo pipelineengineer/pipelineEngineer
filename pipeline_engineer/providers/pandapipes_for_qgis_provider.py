@@ -43,6 +43,8 @@ import pandapipes
 from .algorithms.fluid_modelling.pipeflow.pipeflow_alg import PipeFlowAlgorithm
 from .algorithms.fluid_modelling.fluids.fluid_algs import AddFluidValueToLayer
 from .algorithms.fluid_modelling.incompressible_flow.incompressible_flow_alg import IncompressibleFlowAlgroithm
+from .algorithms.fluid_modelling.two_phase_flow.two_phase_flow_alg import TwoPhaseFlowAlgorithm
+from .algorithms.fluid_modelling.two_phase_flow_node_to_node.two_phase_flow_node_to_node_alg import NodalTwoPhaseFlowAlgorithm
 from .algorithms.fluid_modelling.update_flow_rates.update_flow_rates_alg import updateFlowRatesAlgorithm
 
 #except:
@@ -71,6 +73,8 @@ class PandaPipesForQGISProvider(QgsProcessingProvider):
         self.addAlgorithm(AddFluidValueToLayer())
         self.addAlgorithm(updateFlowRatesAlgorithm())
         self.addAlgorithm(IncompressibleFlowAlgroithm())
+        self.addAlgorithm(TwoPhaseFlowAlgorithm())
+        self.addAlgorithm(NodalTwoPhaseFlowAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

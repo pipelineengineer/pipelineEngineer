@@ -1,3 +1,4 @@
 name,fluid_type,compressibility,density,heat_capacity,molar_mass,viscosity,is_gas
-methane_treated,gas,1,0.659,2221.068,16.04,0.00002,True
-slurry,liquid,1,5000,1,18.015,0.0125,False
+methane_treated,gas,1.0,0.659,2221.068,16.04,2e-05,True
+slurry,liquid,1.0,5000.0,1.0,18.015,0.0125,False
+produced_water,liquid,1.0,1020.0,4822.0,18.015,0.001,False

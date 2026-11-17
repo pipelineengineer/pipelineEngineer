@@ -15,7 +15,7 @@ def calculate_friction_factor(re_d,line_roughness_m,internal_diameter):
         )
     return friction_factor
 
-def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,roughness,multiplier,liquid_density,liquid_viscosity,vapour_pres,fluid_temp):
+def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,roughness,multiplier,liquid_density,liquid_viscosity,pres_floor,pres_ceil,fluid_temp):
 
     vol_flow_rate = mass_flow_rate / liquid_density
 
@@ -65,7 +65,7 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_to = max(p_from - loss,vapour_pres*multiplier)
+            p_to = min(max(p_from - loss,pres_floor),pres_ceil)
 
             line_mesh_df.loc[i, 'p_to_bar'] = p_to
 
@@ -89,7 +89,7 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
             
             loss = line_mesh_df.loc[i, 'total_loss_bar']
 
-            p_from = max(p_to + loss,vapour_pres*multiplier)
+            p_from = min(max(p_to + loss,pres_floor),pres_ceil)
 
             line_mesh_df.loc[i, 'p_from_bar'] = p_from
 
@@ -105,19 +105,19 @@ def create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,internal_diameter,rou
 
     return line_mesh_df
 
-def incompressible_pres_through_network(network_df,network_xyz_df,boundaries_df,liquid_density,liquid_viscosity,vapour_pres,fluid_temp,multiplier,two_phase_layers):
+def incompressible_pres_through_network(network_df,network_xyz_df,boundaries_df,liquid_density,liquid_viscosity,pres_floor,pres_ceil,fluid_temp,multiplier,two_phase_layers):
     i = 0
     
-    boundaries_df = boundaries_df[boundaries_df['in_service'] != False]
+    if 'in_service' in boundaries_df.columns.tolist(): 
+    
+        boundaries_df = boundaries_df[boundaries_df['in_service'] != False]
+        
     known_junctions_df = boundaries_df[['junction','p_bar']]
     to_junctions = network_df['to_junction'].tolist()
     from_junctions = network_df['from_junction'].tolist()
     junctions = set(to_junctions + from_junctions)
     known_junctions = known_junctions_df['junction'].tolist()
     unknown_junctions = [item for item in junctions if item not in known_junctions]
-    
-    largest_mass_flow_rate = max(network_df['mdot_from_kg_per_s'].tolist())
-
 
     lst = network_df['mdot_from_kg_per_s'].tolist()
     count = sum(1 for x in lst if x != 0)
@@ -251,7 +251,7 @@ def incompressible_pres_through_network(network_df,network_xyz_df,boundaries_df,
             line_mesh_df = create_line_mesh(line_xyz_df,known,pres,mass_flow_rate,
                                             internal_diameter,roughness,multiplier,
                                             liquid_density,liquid_viscosity,
-                                            vapour_pres,fluid_temp)
+                                            pres_floor,pres_ceil,fluid_temp)
 
             network_mesh_df = pd.concat([network_mesh_df,line_mesh_df],ignore_index=True)
             

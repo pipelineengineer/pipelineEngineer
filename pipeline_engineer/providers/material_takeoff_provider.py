@@ -38,11 +38,16 @@ import os
 
 from qgis.PyQt.QtGui import QIcon
 
-#try:
-from .algorithms.material_takeoff.material_takeoff_algs import *
+from .algorithms.material_takeoff.material_takeoff_algs import TeeJunctionsAlgorithm
+from .algorithms.material_takeoff.material_takeoff_algs import BendsAlgorithm
+from .algorithms.material_takeoff.material_takeoff_algs import FourWayUnionsAlgorithm
+from .algorithms.material_takeoff.material_takeoff_algs import JoinAttributesAlgorithm
 
-#except:
-#    pass
+try:
+    from .algorithms.material_takeoff.material_takeoff_algs import VentsDrainsAlgorithm
+    drains_avail = True
+except:
+    drains_avail = False
 
 class materialTakeOffProvider(QgsProcessingProvider):
 
@@ -67,10 +72,10 @@ class materialTakeOffProvider(QgsProcessingProvider):
         self.addAlgorithm(BendsAlgorithm())
         self.addAlgorithm(FourWayUnionsAlgorithm())
         self.addAlgorithm(JoinAttributesAlgorithm())
-        try:
+        
+        if drains_avail:
             self.addAlgorithm(VentsDrainsAlgorithm())
-        except:
-            pass
+
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

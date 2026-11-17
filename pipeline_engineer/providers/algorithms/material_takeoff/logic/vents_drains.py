@@ -105,6 +105,7 @@ def vent_drain_placer(line_layer,id_field,chainage,dem,elev_offset_lower,elev_of
                     
                     prev_chainage = distance
             except:
+                print('End of line reached')
                 continue
             
             hpv_chainage_df = pd.concat([hpv_chainage_df,df_entry])

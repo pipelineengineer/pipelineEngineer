@@ -23,7 +23,7 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QMessageBox
 from qgis.core import QgsProcessingAlgorithm, QgsApplication
 
 # Initialize Qt resources from file resources.py
@@ -42,11 +42,10 @@ try:
     from .ui.network_component_creator.network_component_dialog import ComponentDialog
     from .providers.pandapipes_for_qgis_provider import PandaPipesForQGISProvider
     from .ui.fluids_browser.fluids_dialog import FluidsDialog
-    
     fluids_avail = True
+    
 except:
     fluids_avail = False
-    pass
 
 from .ui.style_applicator.style_applicator_dockwidget import StyleApplicatorDockWidget
 
@@ -57,18 +56,17 @@ try:
 
 except:
     mto_avail = False
-    pass
 
 from .providers.network_cleanup_provider import NetworkCleanupProvider
 from .providers.material_takeoff_provider import materialTakeOffProvider
 
 import os.path
 
-
 class PipelineEngineer:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
+        self.iface = iface
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -77,37 +75,21 @@ class PipelineEngineer:
         :type iface: QgsInterface
         """
         # Adding Provider
-        try:
+        if fluids_avail:
             self.provider = PandaPipesForQGISProvider()
-            
-        except:
-            pass
-        
-        try:
-            self.provider = PandaPowerForQGISProvider()
-            
-        except:
-            pass
-
-        
-        self.net_provider = NetworkCleanupProvider()
-        self.mto_provider = materialTakeOffProvider()
-        
-        try:
-            self.assy_dlg = AssemblyManagerDialog()
-        except:
-            pass
-        
-        try:
             self.fluid_dlg = FluidsDialog()
             self.network_dlg = ComponentDialog()
-        except:
-            pass
+            
         
-        try:
-            self.power_dlg = PowerComponentDialog()
-        except:
-            pass
+        if pandapower_avail:
+            self.provider = PandaPowerForQGISProvider()
+            
+        
+        self.net_provider = NetworkCleanupProvider()
+        
+        if mto_avail:
+            self.mto_provider = materialTakeOffProvider()
+            self.assy_dlg = AssemblyManagerDialog()
         
         self.style_dw = StyleApplicatorDockWidget()
         
@@ -234,12 +216,9 @@ class PipelineEngineer:
             self.provider = PandaPipesForQGISProvider()
             QgsApplication.processingRegistry().addProvider(self.provider)
         
-        try:
+        if pandapower_avail:
             self.power_provider = PandaPowerForQGISProvider()
             QgsApplication.processingRegistry().addProvider(self.power_provider)
-            
-        except:
-            pass
         
         QgsApplication.processingRegistry().addProvider(self.net_provider)
         QgsApplication.processingRegistry().addProvider(self.mto_provider)
@@ -302,7 +281,7 @@ class PipelineEngineer:
         # remove this statement if dockwidget is to remain
         # for reuse if plugin is reopened
         # Commented next statement since it causes QGIS crashe
-        # when closing the docked window:
+        # when closing the docked self:
         # self.dockwidget = None
 
         self.pluginIsActive = False
@@ -310,18 +289,17 @@ class PipelineEngineer:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         
-        try:
+        if fluids_avail:
             QgsApplication.processingRegistry().removeProvider(self.provider)
-        except:
-            pass
         
-        try:
+        if pandapower_avail:
             QgsApplication.processingRegistry().removeProvider(self.power_provider)
-        except:
-            pass
         
         QgsApplication.processingRegistry().removeProvider(self.net_provider)
-        QgsApplication.processingRegistry().removeProvider(self.mto_provider)
+        
+        if mto_avail:
+            QgsApplication.processingRegistry().removeProvider(self.mto_provider)
+        
         for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&Pipeline Engineer'),
@@ -370,12 +348,13 @@ class PipelineEngineer:
 
     def run_power_component(self):
         """Run method that performs all the real work"""
-
+        
+        self.power_dlg = PowerComponentDialog()
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.power_dlg = PowerComponentDialog()
+            
 
         # show the dialog
         self.power_dlg.show()

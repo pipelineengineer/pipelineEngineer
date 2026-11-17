@@ -8,7 +8,7 @@ component_fields_dict = { "Junction": ['pn_bar','tfluid_k', 'height_m','name',
                                        'in_service','type','geodata'],
                          
                            "Pipe":['from_junction', 'to_junction', 'length_km', 
-                                   'diameter_m', 'k_mm', 'loss_coefficient', 
+                                   'diameter_m','inner_diameter_mm', 'k_mm', 'loss_coefficient', 
                                  'sections', 'alpha_w_per_m2k', 'text_k', 'qext_w', 
                                  'name', 'geodata', 'in_service', 'type'],
 
@@ -19,7 +19,13 @@ component_fields_dict = { "Junction": ['pn_bar','tfluid_k', 'height_m','name',
                            "Sink":['junction', 'mdot_kg_per_s', 'scaling',
                                    'name', 'in_service', 'type'],
 
+                            "Sink (Two-Phase)":['junction', 'l_mdot_kg_per_s', 'g_mdot_kg_per_s', 'scaling',
+                                   'name', 'in_service', 'type'],
+
                            "Source":['junction', 'mdot_kg_per_s', 'scaling',
+                                     'name', 'in_service', 'type'],
+                            
+                            "Source (Two-Phase)":['junction', 'l_mdot_kg_per_s', 'g_mdot_kg_per_s', 'scaling',
                                      'name', 'in_service', 'type'],
 
                            "Mass Storage":['junction', 'mdot_kg_per_s', 'init_m_stored_kg',
@@ -65,8 +71,12 @@ component_geometries_dict = {
     "Valve":['Point','LineString','Polygon'],
 
     "Sink":['Point','LineString','Polygon'],
+    
+    "Sink (Two-Phase)":['Point','LineString','Polygon'],
 
     "Source":['Point','LineString','Polygon'],
+    
+    "Source (Two-Phase)":['Point','LineString','Polygon'],
 
     "Mass Storage":['Point','LineString','Polygon'],
 
@@ -93,6 +103,7 @@ field_types = fields = [
     QgsField("controlled_p_bar", QVariant.Double),
     QgsField("control_active", QVariant.Bool),
     QgsField("diameter_m", QVariant.Double),
+    QgsField("inner_diameter_mm", QVariant.Double),
     QgsField("flow_junction", QVariant.String),
     QgsField("from_junction", QVariant.String),
     QgsField("geodata", QVariant.String),
@@ -105,6 +116,8 @@ field_types = fields = [
     QgsField("max_m_stored_kg", QVariant.Double),
     QgsField("mdot_flow_kg_per_s", QVariant.Double),
     QgsField("mdot_kg_per_s", QVariant.Double),
+    QgsField("l_mdot_kg_per_s", QVariant.Double),
+    QgsField("g_mdot_kg_per_s", QVariant.Double),
     QgsField("min_m_stored_kg", QVariant.Double),
     QgsField("name", QVariant.String),
     QgsField("net", QVariant.String),

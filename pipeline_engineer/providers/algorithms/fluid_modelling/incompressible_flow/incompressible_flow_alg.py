@@ -68,7 +68,8 @@ class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
     LAYERS = 'LAYERS'
     LIQUID = 'LIQUID'
     PRES_MULTIPLIER = 'PRES_MULTIPLIER'
-    VAPOUR_PRES = 'VAPOUR_PRES'
+    PRES_FLOOR = 'PRES_FLOOR'
+    PRES_CEIL = 'PRES_CEIL'
     AMBIENT_TEMP = 'AMBIENT_TEMP'
     FLUID_PRES = 'FLUID_PRES'
     RETURN_NETWORK = 'RETURN_NETWORK'
@@ -141,9 +142,15 @@ class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
         ))
         
         self.addParameter(QgsProcessingParameterNumber(
-            self.VAPOUR_PRES, 'Liquid Vapour Pressure: ',
+            self.PRES_FLOOR, 'Pressure Floor: ',
             type=QgsProcessingParameterNumber.Double,
-            minValue=-100000, maxValue=100000, defaultValue=0.0563
+            minValue=-100000, maxValue=100000, defaultValue=-1000000
+        ))
+        
+        self.addParameter(QgsProcessingParameterNumber(
+            self.PRES_CEIL, 'Pressure Ceil: ',
+            type=QgsProcessingParameterNumber.Double,
+            minValue=-100000, maxValue=100000, defaultValue=1000000
         ))
         
         self.addParameter(QgsProcessingParameterNumber(
@@ -297,7 +304,8 @@ class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
         tol_m = self.parameterAsDouble(parameters, self.VEL_TOL, context)
         tol_T = self.parameterAsDouble(parameters, self.TEMP_TOL, context)
         multiplier = self.parameterAsDouble(parameters, self.PRES_MULTIPLIER, context)
-        vapour_pres = self.parameterAsDouble(parameters, self.VAPOUR_PRES, context)
+        pres_floor = self.parameterAsDouble(parameters, self.PRES_FLOOR, context)
+        pres_ceil = self.parameterAsDouble(parameters, self.PRES_CEIL, context)
         tol_res = self.parameterAsDouble(parameters, self.RES_TOL, context)
         ambient_temp = self.parameterAsDouble(parameters, self.AMBIENT_TEMP, context)
         friction_model_index = self.parameterAsInt(parameters, self.FRIC_MODEL, context)
@@ -380,7 +388,8 @@ class IncompressibleFlowAlgroithm(QgsProcessingAlgorithm):
                                                 fluid_pres=fluid_pres,fluid_temp=ambient_temp,
                                                 load_network_skeleton=load_network_skeleton,
                                                 chainage=chainage,dem_layer=dem_layer,
-                                                vapour_pres=vapour_pres,multiplier=multiplier,
+                                                pres_floor=pres_floor,pres_ceil=pres_ceil,
+                                                multiplier=multiplier,
                                                 feedback=feedback
                                             )
         

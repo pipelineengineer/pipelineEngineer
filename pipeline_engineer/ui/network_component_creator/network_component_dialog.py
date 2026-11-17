@@ -85,7 +85,7 @@ class ComponentDialog(QDialog, FORM_CLASS):
 
         components = [
                 "Junction","Pipe","Valve",
-                "Sink","Source","Mass Storage",
+                "Sink","Sink (Two-Phase)","Source","Source (Two-Phase)","Mass Storage",
                 "External Grid","Heat Exchanger",
                 "Pump","Circulation Pump Mass", "Circulation Pump Pressure",
                 "Compressor","Pressure Control","Flow Control"
@@ -307,6 +307,14 @@ class ComponentDialog(QDialog, FORM_CLASS):
 
 
     def on_adapt_component_clicked(self):
+        fields = []
+
+        for i in range(self.twFields.topLevelItemCount()):
+            item = self.twFields.topLevelItem(i)
+            if item.checkState(0) == Qt.Checked:
+                field_name = item.text(0)  # Assuming the field name is in column 0
+                fields.append(field_name)
+        
         component_type = self.cmbComponentType.currentText()
         component_name_field = self.fcbLayerIDField.currentText()
 
@@ -321,12 +329,15 @@ class ComponentDialog(QDialog, FORM_CLASS):
             else:
                 junction_layer = QgsProject.instance().mapLayersByName(self.mlcbJunctionLayer.currentText())[0]
         except:
-            pass
+            QMessageBox.warning(
+                window,
+                "Warning",
+                "Junction Layer is not selected"
+            )
 
-        try:
+        if 'name' in fields:
             fields.remove('name')
-        except:
-            pass
+
 
         # Pulling list of checked fields
         fields = []
@@ -357,29 +368,23 @@ class ComponentDialog(QDialog, FORM_CLASS):
                                                     component_name_field=component_name_field)
             
             fields_to_keep.extend(['name','from_junction','to_junction'])
-            try:
+            if 'from_junction' in fields:
                 fields.remove('from_junction')
-            except:
-                pass
 
-            try:
+            if 'to_junction' in fields:
                 fields.remove('to_junction')
-            except:
-                pass
+
             
         elif 'junction' in fields:
             layer = create_component_with_junctions_from_existing(layer=layer,fields_to_keep=fields_to_keep,
                                                                   junction_layer=junction_layer,component_name_field=component_name_field)
 
-            try:
+            if 'name' in fields:
                 fields.remove('name')
-            except:
-                pass
-
-            try:
+                
+            if 'junction' in fields:
                 fields.remove('junction')
-            except:
-                pass
+
         else:
             print('CHECK 4')
             fields_to_keep.extend(['name'])

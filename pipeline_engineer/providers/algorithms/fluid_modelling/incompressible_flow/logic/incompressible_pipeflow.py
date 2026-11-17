@@ -10,7 +10,7 @@ def incompressible_flow(layers,args,
                              liquid_phase,
                              fluid_pres,fluid_temp,
                              load_network_skeleton,
-                             chainage,dem_layer,vapour_pres,multiplier,
+                             chainage,dem_layer,pres_floor,pres_ceil,multiplier,
                              feedback):
     
     liquid_density = get_fluid_parameter(parameter='density',chosen_fluid=liquid_phase,temperature=fluid_temp,pressure=fluid_pres)
@@ -39,6 +39,19 @@ def incompressible_flow(layers,args,
         if 'pipe layer' in layer_name:
             pipe_results_layer = layer
             
+            field_names = pipe_results_layer.fields().names()
+            
+            if 'diameter_m' not in field_names:
+                
+                pipe_results_layer = processing.run("native:fieldcalculator", 
+                                                            {'INPUT':pipe_results_layer,
+                                                             'FIELD_NAME':'diameter_m',
+                                                             'FIELD_TYPE':0,
+                                                             'FIELD_LENGTH':0,
+                                                             'FIELD_PRECISION':0,
+                                                             'FORMULA':'"inner_diameter_mm"/1000',
+                                                             'OUTPUT':'memory:'})['OUTPUT']
+            
         elif 'junction layer' in layer_name:
             junction_layer = layer
         elif 'grid layer' in layer_name:
@@ -63,6 +76,7 @@ def incompressible_flow(layers,args,
         pipeflow_result_layers.append(network_xyz)
         pipeflow_result_layers.append(network_skeleton)
     
+
     line_data_df = layer_to_df(network_skeleton)
     line_xyz_df = layer_to_df(network_xyz)
     grids_df = layer_to_df(grid_layer)
@@ -77,7 +91,8 @@ def incompressible_flow(layers,args,
     line_df, junction_df, master_results_df = incompressible_pres_through_network(network_df=line_data_df,network_xyz_df=line_xyz_df,
                                                                              boundaries_df=grids_df,
                                                                              liquid_density=liquid_density,liquid_viscosity=liquid_viscosity,
-                                                                             vapour_pres=vapour_pres,fluid_temp=fluid_temp,multiplier=multiplier,two_phase_layers=two_phase_layers)
+                                                                             pres_floor=pres_floor,pres_ceil=pres_ceil,
+                                                                             fluid_temp=fluid_temp,multiplier=multiplier,two_phase_layers=two_phase_layers)
 
     dataframes = [line_df, junction_df,master_results_df]
     file_names = ['junction_results','pipe_results']
@@ -121,7 +136,7 @@ def incompressible_flow(layers,args,
             re_calc_graduated(layer=joined_layer_pipe, qml_path=style_path)
         
             # adding to session
-            joined_layer_pipe.setName('Two-Phase Pipe Results Layer')
+            joined_layer_pipe.setName('Incompressible Flow Pipe Results Layer')
             two_phase_layers.append(joined_layer_pipe)
         
         elif layer_name == 'junction_results':
@@ -157,7 +172,7 @@ def incompressible_flow(layers,args,
             re_calc_graduated(layer=null_removed, qml_path=style_path)
         
             # adding to session
-            null_removed.setName('Two-Phase Junction Results Layer')
+            null_removed.setName('Incompressible Flow Junction Results Layer')
             
             two_phase_layers.append(null_removed)
             
@@ -200,7 +215,7 @@ def incompressible_flow(layers,args,
             folder_path = os.path.join(script_directory, 'layer_styles')
             os.makedirs(folder_path, exist_ok=True)
 
-            style_path = os.path.join(folder_path, 'pres_drop_by_section.qml')
+            style_path = os.path.join(folder_path, 'pres_drop_by_section_style_two.qml')
 
             re_calc_graduated(layer=line_layer, qml_path=style_path)
             

@@ -14,10 +14,15 @@ sys.path.insert(0, parent_dir)  # Add it to sys.path
 from ...general_logic.function_helpers import *
 
 def create_network_xyz_layer(pipe_results_layer,chainage,raster_layer,load_layers): 
-    in_service_lines = processing.run("native:extractbyexpression", 
-                                      {'INPUT':pipe_results_layer,
-                                       'EXPRESSION':'"in_service" = TRUE',
-                                       'OUTPUT':'memory:'})['OUTPUT']
+    
+    
+    if 'in_service' in pipe_results_layer.fields().names():
+        in_service_lines = processing.run("native:extractbyexpression", 
+                                          {'INPUT':pipe_results_layer,
+                                           'EXPRESSION':'"in_service" = TRUE',
+                                           'OUTPUT':'memory:'})['OUTPUT']
+    else:
+        in_service_lines = pipe_results_layer
 
     retained_fields = processing.run("native:retainfields", 
                                      {'INPUT':in_service_lines,
